@@ -1,4 +1,23 @@
+// Copyright 2026 eraflo
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+mod models;
+mod parser;
+
+use anyhow::Context;
 use clap::{Parser, Subcommand};
+use std::fs;
 
 #[derive(Parser)]
 #[command(name = "compass")]
@@ -16,18 +35,32 @@ enum Commands {
     Check { file: String },
 }
 
-fn main() {
+fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
 
     match &cli.command {
         Commands::Parse { file } => {
             println!("Reading: {}...", file);
-            // TODO: Call parser::parse_readme
-            println!("Parser logic coming soon!");
+            let content = fs::read_to_string(file)
+                .with_context(|| format!("Failed to read file: {}", file))?;
+
+            let steps = parser::parse_readme(&content);
+
+            println!("Detected {} steps:", steps.len());
+            for (i, step) in steps.iter().enumerate() {
+                println!(
+                    "  {}. {} ({} code blocks)",
+                    i + 1,
+                    step.title,
+                    step.code_blocks.len()
+                );
+            }
         }
         Commands::Check { file } => {
             println!("Checking dependencies for: {}...", file);
             // TODO: Call executor::check_deps
         }
     }
+
+    Ok(())
 }
