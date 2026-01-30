@@ -1,0 +1,33 @@
+// Copyright 2026 eraflo
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+/// A block of code extracted from a Markdown file.
+#[derive(Debug, Clone, Default)]
+pub struct CodeBlock {
+    /// The language of the code block (e.g., "rust", "bash").
+    pub language: Option<String>,
+    /// The raw content of the code block.
+    pub content: String,
+}
+
+/// A parsing step representing a section of the README.
+#[derive(Debug, Clone, Default)]
+pub struct Step {
+    /// The title of the step (extracted from a header).
+    pub title: String,
+    /// The accumulated text description between headers.
+    pub description: String,
+    /// A list of code blocks found within this section.
+    pub code_blocks: Vec<CodeBlock>,
+}
