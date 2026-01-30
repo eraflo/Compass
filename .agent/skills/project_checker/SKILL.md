@@ -12,7 +12,7 @@ This skill provides a centralized way to verify the codebase's integrity.
 ### Full Check
 Runs everything (fmt, clippy, tests).
 ```powershell
-./scripts/check.ps1
+.agent/skills/project_checker/scripts/check.ps1
 ```
 
 ### Individual Steps

@@ -49,7 +49,7 @@ jobs:
           @semantic-release/changelog \
           @semantic-release/git \
           @semantic-release/github \
-          @semantic-release-cargo
+          @semantic-release-cargo/semantic-release-cargo
 
       - name: Release
         env:
