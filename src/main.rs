@@ -29,8 +29,10 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
-    /// Parse and display the structure of a README
+    /// Parse and display a summary of the README
     Parse { file: String },
+    /// Launch the interactive TUI
+    Tui { file: String },
     /// Check if system dependencies are met
     Check { file: String },
 }
@@ -40,6 +42,23 @@ fn main() -> anyhow::Result<()> {
 
     match &cli.command {
         Commands::Parse { file } => {
+            println!("Reading: {}...", file);
+            let content = fs::read_to_string(file)
+                .with_context(|| format!("Failed to read file: {}", file))?;
+
+            let steps = core::parser::parse_readme(&content);
+
+            println!("Detected {} steps:", steps.len());
+            for (i, step) in steps.iter().enumerate() {
+                println!(
+                    "  {}. {} ({} code blocks)",
+                    i + 1,
+                    step.title,
+                    step.code_blocks.len()
+                );
+            }
+        }
+        Commands::Tui { file } => {
             println!("Reading: {}...", file);
             let content = fs::read_to_string(file)
                 .with_context(|| format!("Failed to read file: {}", file))?;

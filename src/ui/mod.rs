@@ -52,14 +52,14 @@ fn run_loop(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>, mut app: App)
     loop {
         terminal.draw(|f| app.render(f))?;
 
-        if event::poll(std::time::Duration::from_millis(100))? {
-            if let Event::Key(key) = event::read()? {
-                match key.code {
-                    KeyCode::Char('q') => return Ok(()),
-                    KeyCode::Down | KeyCode::Char('j') => app.next(),
-                    KeyCode::Up | KeyCode::Char('k') => app.previous(),
-                    _ => {}
-                }
+        if matches!(event::poll(std::time::Duration::from_millis(100)), Ok(true))
+            && let Ok(Event::Key(key)) = event::read()
+        {
+            match key.code {
+                KeyCode::Char('q') => return Ok(()),
+                KeyCode::Down | KeyCode::Char('j') => app.next(),
+                KeyCode::Up | KeyCode::Char('k') => app.previous(),
+                _ => {}
             }
         }
 

@@ -74,10 +74,11 @@ pub fn parse_readme(content: &str) -> Vec<Step> {
             }
             Event::SoftBreak | Event::HardBreak | Event::End(pulldown_cmark::TagEnd::Paragraph) => {
                 // Add a new line to the description
-                if let Some(ref mut step) = current_step {
-                    if !in_heading && !in_code_block {
-                        step.description.push('\n');
-                    }
+                if let Some(step) = current_step
+                    .as_mut()
+                    .filter(|_| !in_heading && !in_code_block)
+                {
+                    step.description.push('\n');
                 }
             }
             _ => {}
