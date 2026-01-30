@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::models::{CodeBlock, Step};
+use crate::core::models::{CodeBlock, Step};
 use pulldown_cmark::{Event, Parser, Tag};
 
 /// Parses a Markdown string into a sequence of steps.

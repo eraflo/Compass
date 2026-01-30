@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-mod models;
-mod parser;
+mod core;
+mod ui;
 
 use anyhow::Context;
 use clap::{Parser, Subcommand};
@@ -44,17 +44,15 @@ fn main() -> anyhow::Result<()> {
             let content = fs::read_to_string(file)
                 .with_context(|| format!("Failed to read file: {}", file))?;
 
-            let steps = parser::parse_readme(&content);
+            let steps = core::parser::parse_readme(&content);
 
-            println!("Detected {} steps:", steps.len());
-            for (i, step) in steps.iter().enumerate() {
-                println!(
-                    "  {}. {} ({} code blocks)",
-                    i + 1,
-                    step.title,
-                    step.code_blocks.len()
-                );
+            if steps.is_empty() {
+                println!("No sections (headers) found in the Markdown file.");
+                return Ok(());
             }
+
+            println!("Launching UI for {} steps...", steps.len());
+            ui::run_tui(steps)?;
         }
         Commands::Check { file } => {
             println!("Checking dependencies for: {}...", file);
