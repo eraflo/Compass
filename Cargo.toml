@@ -33,3 +33,6 @@ chrono = "0.4"
 minijinja = { version = "1.0", features = ["debug"] }
 ansi-to-tui = "7.0.0"
 uuid = { version = "1.20.0", features = ["v4"] }
+# Network requests
+reqwest = { version = "0.11", features = ["blocking", "rustls-tls"] }
+url = "2.5"

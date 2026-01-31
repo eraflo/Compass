@@ -25,5 +25,6 @@
 pub mod config;
 pub mod executor;
 pub mod export;
+pub mod fetcher;
 pub mod models;
 pub mod parser;

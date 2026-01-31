@@ -35,7 +35,7 @@ fn render_status_bar(frame: &mut Frame, area: Rect, app: &App) {
     let total = app.total_executable_steps();
 
     // Build status line with multiple spans
-    let status_line = Line::from(vec![
+    let mut spans = vec![
         Span::styled(
             format!(" 🧭 Compass v{VERSION} "),
             Style::default()
@@ -43,6 +43,19 @@ fn render_status_bar(frame: &mut Frame, area: Rect, app: &App) {
                 .add_modifier(Modifier::BOLD),
         ),
         Span::styled("│", Style::default().fg(Color::DarkGray)),
+    ];
+
+    if app.is_remote {
+        spans.push(Span::styled(
+            " 🌐 Remote ",
+            Style::default()
+                .fg(Color::Magenta)
+                .add_modifier(Modifier::BOLD),
+        ));
+        spans.push(Span::styled("│", Style::default().fg(Color::DarkGray)));
+    }
+
+    spans.extend(vec![
         Span::styled(
             format!(" ✅ {completed}/{total} "),
             Style::default().fg(Color::Green),
@@ -56,6 +69,8 @@ fn render_status_bar(frame: &mut Frame, area: Rect, app: &App) {
         Span::styled(" ? Help ", Style::default().fg(Color::Yellow)),
         Span::styled("│ s Save │ q Quit ", Style::default().fg(Color::DarkGray)),
     ]);
+
+    let status_line = Line::from(spans);
 
     let status_bar = Paragraph::new(status_line).style(Style::default().bg(Color::Rgb(30, 30, 40)));
 
