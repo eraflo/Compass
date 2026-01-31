@@ -57,6 +57,8 @@ pub struct App {
     pub export_message: Option<(bool, String)>,
     /// Scroll offset for the help modal.
     pub help_scroll: u16,
+    /// Indicates if the README is loaded from a remote source.
+    pub is_remote: bool,
 }
 
 impl App {
@@ -66,12 +68,13 @@ impl App {
     ///
     /// * `steps` - The list of steps parsed from the README.
     /// * `readme_path` - The path to the README file.
+    /// * `is_remote` - Whether the file is remote.
     ///
     /// # Returns
     ///
     /// A new `App` instance ready for rendering.
     #[must_use]
-    pub fn new(steps: Vec<Step>, readme_path: PathBuf) -> Self {
+    pub fn new(steps: Vec<Step>, readme_path: PathBuf, is_remote: bool) -> Self {
         let mut list_state = ListState::default();
         if !steps.is_empty() {
             list_state.select(Some(0));
@@ -80,7 +83,7 @@ impl App {
         // Initialize configuration manager
         let config_manager = ConfigManager::new().ok();
 
-        Self {
+        let app = Self {
             steps,
             list_state,
             should_quit: false,
@@ -95,7 +98,10 @@ impl App {
             config_manager,
             export_message: None,
             help_scroll: 0,
-        }
+            is_remote,
+        };
+
+        app
     }
 
     /// Loads configuration for the current README and pre-fills placeholders.

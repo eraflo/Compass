@@ -194,9 +194,20 @@ pub fn perform_execution(app: &mut App, bypass_safety: bool) {
             // 2. Dangerous Patterns
             let handler = get_language_handler(language.as_deref());
             let patterns = handler.get_dangerous_patterns();
+            let check_result = SafetyShield::check(&content, patterns);
+
+            if app.is_remote {
+                app.safety_pattern = Some(
+                    check_result
+                        .map(ToString::to_string)
+                        .unwrap_or_else(|| "Remote Source (Strict Mode)".to_string()),
+                );
+                app.mode = Mode::SafetyAlert;
+                return;
+            }
 
             #[allow(clippy::collapsible_if)]
-            if let Some(pattern) = SafetyShield::check(&content, patterns) {
+            if let Some(pattern) = check_result {
                 app.safety_pattern = Some(pattern.to_string());
                 app.mode = Mode::SafetyAlert;
                 return;

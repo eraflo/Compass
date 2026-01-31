@@ -33,7 +33,7 @@ use std::io;
 use std::path::PathBuf;
 
 /// Starts the TUI application.
-pub fn run_tui(steps: Vec<Step>, readme_path: PathBuf) -> Result<()> {
+pub fn run_tui(steps: Vec<Step>, readme_path: PathBuf, is_remote: bool) -> Result<()> {
     // Setup terminal
     enable_raw_mode()?;
     let mut stdout = io::stdout();
@@ -42,7 +42,7 @@ pub fn run_tui(steps: Vec<Step>, readme_path: PathBuf) -> Result<()> {
     let mut terminal = Terminal::new(backend)?; // Create terminal
 
     // Create app and run main loop
-    let mut app = App::new(steps, readme_path);
+    let mut app = App::new(steps, readme_path, is_remote);
 
     // Load persisted configuration (placeholders)
     app.load_config();

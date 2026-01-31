@@ -38,15 +38,31 @@ enum Commands {
     Check { file: String },
 }
 
+fn load_readme(file: &str) -> anyhow::Result<(String, PathBuf, bool)> {
+    if file.starts_with("http://") || file.starts_with("https://") {
+        println!("Downloading remote README from {}...", file);
+        let content = core::fetcher::fetch_remote_content(file)?;
+        Ok((content, PathBuf::from(file), true))
+    } else {
+        let path = PathBuf::from(file);
+        let canonical_path = if path.exists() {
+            fs::canonicalize(&path)?
+        } else {
+            path
+        };
+        println!("Reading: {}...", canonical_path.display());
+        let content = fs::read_to_string(&canonical_path)
+            .with_context(|| format!("Failed to read file: {file}"))?;
+        Ok((content, canonical_path, false))
+    }
+}
+
 fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
 
     match &cli.command {
         Commands::Parse { file } => {
-            println!("Reading: {file}...");
-            let content =
-                fs::read_to_string(file).with_context(|| format!("Failed to read file: {file}"))?;
-
+            let (content, _, _) = load_readme(file)?;
             let steps = core::parser::parse_readme(&content);
 
             println!("Detected {} steps:", steps.len());
@@ -60,14 +76,7 @@ fn main() -> anyhow::Result<()> {
             }
         }
         Commands::Tui { file } => {
-            let path = PathBuf::from(file);
-            let canonical_path = fs::canonicalize(&path)
-                .with_context(|| format!("Failed to resolve path: {file}"))?;
-
-            println!("Reading: {}...", canonical_path.display());
-            let content = fs::read_to_string(&canonical_path)
-                .with_context(|| format!("Failed to read file: {file}"))?;
-
+            let (content, path, is_remote) = load_readme(file)?;
             let steps = core::parser::parse_readme(&content);
 
             if steps.is_empty() {
@@ -76,13 +85,10 @@ fn main() -> anyhow::Result<()> {
             }
 
             println!("Launching UI for {} steps...", steps.len());
-            ui::run_tui(steps, canonical_path)?;
+            ui::run_tui(steps, path, is_remote)?;
         }
         Commands::Check { file } => {
-            println!("Checking dependencies for: {file}...");
-            let content =
-                fs::read_to_string(file).with_context(|| format!("Failed to read file: {file}"))?;
-
+            let (content, _, _) = load_readme(file)?;
             let steps = core::parser::parse_readme(&content);
             let result = core::executor::check_dependencies(&steps);
 
