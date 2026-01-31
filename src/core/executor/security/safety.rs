@@ -19,19 +19,8 @@ impl SafetyShield {
     /// Checks if a command content contains any blacklisted patterns.
     ///
     /// Returns `Some(pattern)` if a dangerous pattern is found, `None` otherwise.
-    pub fn check(cmd_content: &str) -> Option<&'static str> {
-        let blacklist = [
-            "rm -rf /",
-            "rm -rf *",
-            "mkfs",
-            "> /dev/sd",
-            "dd if=",
-            ":(){:|:&};:", // Fork bomb
-            "mv /",
-            "chmod -R 777 /",
-        ];
-
-        blacklist
+    pub fn check(cmd_content: &str, patterns: &[&'static str]) -> Option<&'static str> {
+        patterns
             .iter()
             .find(|&&pattern| cmd_content.contains(pattern))
             .copied()
@@ -44,12 +33,14 @@ mod tests {
 
     #[test]
     fn test_safety_safe() {
-        assert!(SafetyShield::check("ls -la").is_none());
+        let patterns = &["rm -rf"];
+        assert!(SafetyShield::check("ls -la", patterns).is_none());
     }
 
     #[test]
     fn test_safety_dangerous() {
-        assert!(SafetyShield::check("rm -rf /").is_some());
-        assert!(SafetyShield::check("sudo mkfs.ext4 /dev/sda1").is_some());
+        let patterns = &["rm -rf", "mkfs"];
+        assert!(SafetyShield::check("rm -rf /", patterns).is_some());
+        assert!(SafetyShield::check("sudo mkfs.ext4 /dev/sda1", patterns).is_some());
     }
 }

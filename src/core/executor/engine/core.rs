@@ -15,6 +15,7 @@
 use crate::core::executor::engine::builtin::BuiltinHandler;
 use crate::core::executor::engine::context::ExecutionContext;
 use crate::core::executor::engine::session::ShellSession;
+use crate::core::executor::languages::get_language_handler;
 use crate::core::executor::security::safety::SafetyShield;
 use crate::core::executor::security::validator::DependencyValidator;
 use crate::core::models::StepStatus;
@@ -35,21 +36,53 @@ impl Executor {
     }
 
     /// Orchestrates the execution of a code block.
-    pub fn execute_streamed(&mut self, cmd_content: &str, tx: &Sender<String>) -> StepStatus {
+    pub fn execute_streamed(
+        &mut self,
+        cmd_content: &str,
+        language: Option<&str>,
+        bypass_safety: bool,
+        tx: &Sender<String>,
+    ) -> StepStatus {
         // 1. Dependency Validation
-        if let Err(e) = DependencyValidator::validate(cmd_content) {
-            let _ = tx.send(format!("{e}\n"));
-            return StepStatus::Failed;
+        // This acts as a final enforcement. The UI should have already prompted the user,
+        // so if we are here with bypass_safety=false and it fails, it means we are in headless mode
+        // or something went wrong. We return Failed.
+
+        if !bypass_safety {
+            let is_shell = language.is_none()
+                || matches!(
+                    language,
+                    Some("bash" | "sh" | "shell" | "zsh" | "fish" | "cmd" | "powershell")
+                );
+
+            if is_shell {
+                if let Err(e) = DependencyValidator::validate(cmd_content) {
+                    let _ = tx.send(format!("{e}\n"));
+                    return StepStatus::Failed;
+                }
+            } else {
+                let handler = get_language_handler(language);
+                let required_cmd = handler.get_required_command();
+                if let Err(e) = DependencyValidator::validate_binary(required_cmd) {
+                    let _ = tx.send(format!("{e}\n"));
+                    return StepStatus::Failed;
+                }
+            }
         }
 
-        // 2. Safety Shield (Simple check for now, UI confirmation will be added later)
-        if let Some(pattern) = SafetyShield::check(cmd_content) {
-            let _ = tx.send(format!(
-                "Safety alert: Dangerous pattern detected ('{pattern}').\n"
-            ));
-            // In the future, this will return a different status to trigger a UI confirmation
-            // For now, let's just fail to be safe.
-            return StepStatus::Failed;
+        // 2. Safety Shield
+        if !bypass_safety {
+            let handler = get_language_handler(language);
+            let patterns = handler.get_dangerous_patterns();
+
+            if let Some(pattern) = SafetyShield::check(cmd_content, patterns) {
+                let _ = tx.send(format!(
+                    "Safety alert: Dangerous pattern detected ('{pattern}'). Execution blocked.\n"
+                ));
+                // The UI handles the confirmation dialog before calling this with bypass_safety=true.
+                // If we reach here, it means the check failed and was not bypassed (e.g. headless run).
+                return StepStatus::Failed;
+            }
         }
 
         // 3. Handle side-effects (builtins)
@@ -66,6 +99,6 @@ impl Executor {
 
         // 4. Run via ShellSession
         let session = ShellSession::new(self.context.clone());
-        session.run(&cleaned_content, tx)
+        session.run(&cleaned_content, language, tx)
     }
 }

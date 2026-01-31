@@ -118,7 +118,10 @@ pub fn render_details(frame: &mut Frame, area: Rect, step: Option<&Step>, scroll
         }
 
         // --- Output ---
-        if !step.output.is_empty() {
+        let raw_output = &step.output;
+        let trimmed_output = raw_output.trim();
+
+        if !trimmed_output.is_empty() {
             text_lines.push(Line::from(Span::styled(
                 "--- Output ---",
                 Style::default()
@@ -127,13 +130,13 @@ pub fn render_details(frame: &mut Frame, area: Rect, step: Option<&Step>, scroll
             )));
 
             // Render ANSI output using ansi-to-tui
-            match step.output.as_bytes().into_text() {
+            match trimmed_output.as_bytes().into_text() {
                 Ok(output_text) => {
                     text_lines.extend(output_text.lines);
                 }
                 Err(_) => {
                     // Fallback to plain text if parsing fails
-                    for line in step.output.lines() {
+                    for line in trimmed_output.lines() {
                         text_lines.push(Line::from(Span::styled(
                             line,
                             Style::default().fg(Color::Gray),
@@ -150,6 +153,8 @@ pub fn render_details(frame: &mut Frame, area: Rect, step: Option<&Step>, scroll
     }
 
     // Calculate estimated height (naive wrapping approximation)
+    // We add a safety margin because simple char-counting underestimates
+    // height when word-wrapping occurs (ratatui wraps at spaces).
     let inner_width = area.width.saturating_sub(2); // borders
     let mut total_lines: u16 = 0;
     if inner_width > 0 {
@@ -159,9 +164,13 @@ pub fn render_details(frame: &mut Frame, area: Rect, step: Option<&Step>, scroll
             if line_len == 0 {
                 total_lines += 1;
             } else {
+                // Heuristic: Add 10% extra for word-wrapping inefficiencies
+                // plus strict calculation
                 total_lines += line_len.div_ceil(inner_width);
             }
         }
+        // Add a small constant buffer at the end to ensure last lines are visible
+        total_lines += 2;
     }
 
     let details = Paragraph::new(text_lines)

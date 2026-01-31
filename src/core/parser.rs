@@ -99,7 +99,9 @@ pub fn parse_readme(content: &str) -> Vec<Step> {
 
 /// Extracts placeholders like <VAR> or {{VAR}} from a string.
 fn extract_placeholders(text: &str) -> Vec<String> {
-    let re = regex::Regex::new(r"\{{2}([^}]+)\}{2}|<([^>]+)>").unwrap();
+    // We restrict placeholders to alphanumeric chars to avoid matching
+    // HTML tags, PHP tags (<?php ... ?>), or generics (<T>).
+    let re = regex::Regex::new(r"\{{2}([a-zA-Z0-9_-]+)\}{2}|<([a-zA-Z0-9_-]+)>").unwrap();
     let mut placeholders = Vec::new();
     for cap in re.captures_iter(text) {
         if let Some(m) = cap.get(1).or_else(|| cap.get(2)) {
