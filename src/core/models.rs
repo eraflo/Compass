@@ -29,6 +29,8 @@ pub struct CodeBlock {
     pub language: Option<String>,
     /// The raw content of the code block.
     pub content: String,
+    /// Placeholders found in this block (e.g., "`VARIABLE_NAME`").
+    pub placeholders: Vec<String>,
 }
 
 /// A parsing step representing a section of the README.

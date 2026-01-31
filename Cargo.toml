@@ -21,3 +21,4 @@ portable-pty = "0.8"
 # Syntax highlighting for code
 syntect = "5.1"
 regex = "1.12.2"
+which = "7.0"

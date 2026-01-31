@@ -61,10 +61,14 @@ pub fn parse_readme(content: &str) -> Vec<Step> {
                         // Else, create a new code block
                         if let Some(last_block) = step.code_blocks.last_mut() {
                             last_block.content.push_str(&text);
+                            // Re-extract placeholders if content grows
+                            last_block.placeholders = extract_placeholders(&last_block.content);
                         } else {
+                            let placeholders = extract_placeholders(&text);
                             step.code_blocks.push(CodeBlock {
                                 language: current_code_lang.clone(),
                                 content: text.to_string(),
+                                placeholders,
                             });
                         }
                     } else {
@@ -93,6 +97,21 @@ pub fn parse_readme(content: &str) -> Vec<Step> {
     steps
 }
 
+/// Extracts placeholders like <VAR> or {{VAR}} from a string.
+fn extract_placeholders(text: &str) -> Vec<String> {
+    let re = regex::Regex::new(r"\{{2}([^}]+)\}{2}|<([^>]+)>").unwrap();
+    let mut placeholders = Vec::new();
+    for cap in re.captures_iter(text) {
+        if let Some(m) = cap.get(1).or_else(|| cap.get(2)) {
+            let name = m.as_str().trim().to_string();
+            if !placeholders.contains(&name) {
+                placeholders.push(name);
+            }
+        }
+    }
+    placeholders
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -112,5 +131,21 @@ mod tests {
 
         assert_eq!(steps[1].title, "Header 2");
         assert_eq!(steps[1].description.trim(), "Description 2");
+    }
+
+    #[test]
+    fn test_extract_placeholders() {
+        let text = "echo <USER_NAME> and {{API_KEY}}";
+        let placeholders = extract_placeholders(text);
+        assert_eq!(placeholders.len(), 2);
+        assert_eq!(placeholders[0], "USER_NAME");
+        assert_eq!(placeholders[1], "API_KEY");
+    }
+
+    #[test]
+    fn test_parse_with_placeholders() {
+        let content = "# Test\n```bash\necho <HELLO>\n```";
+        let steps = parse_readme(content);
+        assert_eq!(steps[0].code_blocks[0].placeholders[0], "HELLO");
     }
 }
