@@ -18,7 +18,7 @@ use crate::core::models::Step;
 use crate::ui::app::App;
 use anyhow::Result;
 use crossterm::{
-    event::{self, Event, KeyCode},
+    event::{self, Event, KeyCode, KeyEventKind},
     execute,
     terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
@@ -52,19 +52,19 @@ fn run_loop(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>, mut app: App)
     loop {
         terminal.draw(|f| app.render(f))?;
 
-        if matches!(event::poll(std::time::Duration::from_millis(100)), Ok(true))
-            && let Ok(Event::Key(key)) = event::read()
-        {
-            match key.code {
-                KeyCode::Char('q') => return Ok(()),
-                KeyCode::Down | KeyCode::Char('j') => app.next(),
-                KeyCode::Up | KeyCode::Char('k') => app.previous(),
-                KeyCode::Enter => {
-                    // Update main panel to show output if we have a way to
-                    // communicate from thread to app.
-                    app.execute_selected();
+        if matches!(event::poll(std::time::Duration::from_millis(100)), Ok(true)) {
+            if let Ok(Event::Key(key)) = event::read() {
+                if key.kind == KeyEventKind::Press {
+                    match key.code {
+                        KeyCode::Char('q') => return Ok(()),
+                        KeyCode::Down | KeyCode::Char('j') => app.next(),
+                        KeyCode::Up | KeyCode::Char('k') => app.previous(),
+                        KeyCode::Enter => {
+                            app.execute_selected();
+                        }
+                        _ => {}
+                    }
                 }
-                _ => {}
             }
         }
 

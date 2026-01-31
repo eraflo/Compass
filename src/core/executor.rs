@@ -13,76 +13,198 @@
 // limitations under the License.
 
 use crate::core::models::StepStatus;
+use portable_pty::{CommandBuilder, PtySize, native_pty_system};
+use std::collections::HashMap;
+use std::io::Read;
 use std::path::PathBuf;
-use std::process::Command;
+use std::sync::mpsc::Sender;
 
-/// Handles the execution of code blocks and maintains the working directory.
+/// Holds the mutable state of the execution environment.
+#[derive(Debug, Clone, Default)]
 pub struct ExecutionContext {
     pub current_dir: PathBuf,
+    pub env_vars: HashMap<String, String>,
 }
 
 impl ExecutionContext {
     pub fn new() -> Self {
+        let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
         Self {
-            current_dir: std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".")),
+            current_dir,
+            env_vars: HashMap::new(),
+        }
+    }
+}
+
+/// Handles "built-in" commands that affect the `ExecutionContext` directly.
+pub struct BuiltinHandler;
+
+impl BuiltinHandler {
+    /// Scans the content for built-in patterns and updates the context.
+    pub fn pre_process(content: &str, context: &mut ExecutionContext) {
+        for line in content.lines() {
+            let trimmed = line.trim();
+
+            // Detect 'cd'
+            if trimmed.starts_with("cd ") {
+                let path_str = trimmed[3..].trim().trim_matches(|c| c == '\"' || c == '\'');
+                let new_path = context.current_dir.join(path_str);
+                if new_path.exists() && new_path.is_dir() {
+                    context.current_dir = new_path.canonicalize().unwrap_or(new_path);
+                }
+            }
+
+            // Detect 'export'
+            if trimmed.starts_with("export ") {
+                let assignment = trimmed[7..].trim();
+                if let Some((key, val)) = assignment.split_once('=') {
+                    let val = val.trim_matches(|c| c == '\"' || c == '\'');
+                    context
+                        .env_vars
+                        .insert(key.trim().to_string(), val.to_string());
+                }
+            }
+        }
+    }
+}
+
+/// Manages a PTY session for executing a shell command.
+pub struct ShellSession {
+    context: ExecutionContext,
+}
+
+impl ShellSession {
+    pub fn new(context: ExecutionContext) -> Self {
+        Self { context }
+    }
+
+    /// Executing via PTY and streaming output to a sender.
+    pub fn run(&self, content: &str, tx: Sender<String>) -> StepStatus {
+        let pty_system = native_pty_system();
+        let pty_pair = match pty_system.openpty(PtySize {
+            rows: 24,
+            cols: 80,
+            pixel_width: 0,
+            pixel_height: 0,
+        }) {
+            Ok(pair) => pair,
+            Err(e) => {
+                let _ = tx.send(format!("Error opening PTY: {}\n", e));
+                return StepStatus::Failed;
+            }
+        };
+
+        // Command selection based on OS
+        let mut cmd = if cfg!(target_os = "windows") {
+            let mut c = CommandBuilder::new("powershell");
+            c.arg("-Command");
+            c.arg(content);
+            c
+        } else {
+            let mut c = CommandBuilder::new("sh");
+            c.arg("-c");
+            c.arg(content);
+            c
+        };
+
+        cmd.cwd(&self.context.current_dir);
+        for (key, val) in &self.context.env_vars {
+            cmd.env(key, val);
+        }
+
+        // Spawn child
+        let mut child = match pty_pair.slave.spawn_command(cmd) {
+            Ok(child) => child,
+            Err(e) => {
+                let _ = tx.send(format!("Error spawning process: {}\n", e));
+                return StepStatus::Failed;
+            }
+        };
+
+        // Slave is no longer needed after spawn
+        drop(pty_pair.slave);
+
+        // Streaming output
+        let mut reader = match pty_pair.master.try_clone_reader() {
+            Ok(r) => r,
+            Err(e) => {
+                let _ = tx.send(format!("Error getting reader: {}\n", e));
+                return StepStatus::Failed;
+            }
+        };
+
+        let mut buffer = [0u8; 1024];
+        loop {
+            match reader.read(&mut buffer) {
+                Ok(0) => break, // EOF
+                Ok(n) => {
+                    let output = String::from_utf8_lossy(&buffer[..n]).to_string();
+                    if tx.send(output).is_err() {
+                        break;
+                    }
+                }
+                Err(ref e) if e.kind() == std::io::ErrorKind::Interrupted => continue,
+                Err(_) => break,
+            }
+        }
+
+        // Wait for exit
+        match child.wait() {
+            Ok(status) => {
+                if status.success() {
+                    StepStatus::Success
+                } else {
+                    StepStatus::Failed
+                }
+            }
+            Err(_) => StepStatus::Failed,
+        }
+    }
+}
+
+/// The main entry point for the execution engine.
+pub struct Executor {
+    pub context: ExecutionContext,
+}
+
+impl Executor {
+    pub fn new() -> Self {
+        Self {
+            context: ExecutionContext::new(),
         }
     }
 
-    /// Executes a code block and returns the status and captured output.
-    pub fn execute(&mut self, content: &str) -> (StepStatus, String) {
-        let mut output_buf = String::new();
-        let mut final_status = StepStatus::Success;
+    /// Orchestrates the execution of a code block.
+    pub fn execute_streamed(&mut self, content: &str, tx: Sender<String>) -> StepStatus {
+        // 1. Handle side-effects (builtins)
+        BuiltinHandler::pre_process(content, &mut self.context);
 
-        // Split content into lines and process them
-        // For now, we execute the whole block as a single shell command
-        // This handles multiple commands if they are valid shell (e.g., cmd1 && cmd2)
+        // 2. Run via ShellSession
+        let session = ShellSession::new(self.context.clone());
+        session.run(content, tx)
+    }
+}
 
-        // Check if there are 'cd' commands to update our state
-        // A more robust way would be to wrap the command and export the PWD,
-        // but for a simple version we can try to detect 'cd' at the start of lines.
-        for line in content.lines() {
-            let trimmed = line.trim();
-            if trimmed.starts_with("cd ") {
-                let path_str = &trimmed[3..].trim().replace("\"", "").replace("'", "");
-                let new_path = self.current_dir.join(path_str);
-                if new_path.exists() && new_path.is_dir() {
-                    self.current_dir = new_path.canonicalize().unwrap_or(self.current_dir.clone());
-                }
-            }
-        }
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-        let cmd_result = if cfg!(target_os = "windows") {
-            Command::new("powershell")
-                .arg("-Command")
-                .arg(content)
-                .current_dir(&self.current_dir)
-                .output()
-        } else {
-            Command::new("sh")
-                .arg("-c")
-                .arg(content)
-                .current_dir(&self.current_dir)
-                .output()
+    #[test]
+    fn test_builtin_export() {
+        let mut ctx = ExecutionContext::default();
+        BuiltinHandler::pre_process("export FOO=BAR\nexport BAZ=\"QUX\"", &mut ctx);
+        assert_eq!(ctx.env_vars.get("FOO").unwrap(), "BAR");
+        assert_eq!(ctx.env_vars.get("BAZ").unwrap(), "QUX");
+    }
+
+    #[test]
+    fn test_builtin_cd_not_matching() {
+        let mut ctx = ExecutionContext {
+            current_dir: PathBuf::from("."),
+            env_vars: HashMap::new(),
         };
-
-        match cmd_result {
-            Ok(output) => {
-                let stdout = String::from_utf8_lossy(&output.stdout);
-                let stderr = String::from_utf8_lossy(&output.stderr);
-
-                output_buf.push_str(&stdout);
-                output_buf.push_str(&stderr);
-
-                if !output.status.success() {
-                    final_status = StepStatus::Failed;
-                }
-            }
-            Err(e) => {
-                output_buf.push_str(&format!("Error executing command: {}", e));
-                final_status = StepStatus::Failed;
-            }
-        }
-
-        (final_status, output_buf)
+        let initial_dir = ctx.current_dir.clone();
+        BuiltinHandler::pre_process("nonexistent_command", &mut ctx);
+        assert_eq!(ctx.current_dir, initial_dir);
     }
 }

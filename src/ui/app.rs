@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::core::executor::ExecutionContext;
+use crate::core::executor::{ExecutionContext, Executor};
 use crate::core::models::{Step, StepStatus};
 use ratatui::{
     Frame,
@@ -20,12 +20,18 @@ use ratatui::{
     style::{Color, Modifier, Style},
     widgets::{Block, Borders, List, ListItem, ListState, Paragraph},
 };
+use regex::Regex;
+use std::collections::HashMap;
+use std::path::PathBuf;
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::thread;
 
 /// A message sent from the execution thread to the main app.
 pub enum ExecutionMessage {
-    Finished(usize, StepStatus, String),
+    /// Partial output captured from the PTY.
+    OutputPartial(usize, String),
+    /// Execution finished with status and final context.
+    Finished(usize, StepStatus, PathBuf, HashMap<String, String>),
 }
 
 /// The main application state for the TUI.
@@ -36,8 +42,8 @@ pub struct App {
     pub list_state: ListState,
     /// Whether the application should exit.
     pub should_quit: bool,
-    /// The execution context for running commands.
-    pub executor: ExecutionContext,
+    /// The execution engine.
+    pub executor: Executor,
     /// Channel sender for threads.
     pub tx: Sender<ExecutionMessage>,
     /// Channel receiver for the main loop.
@@ -55,7 +61,7 @@ impl App {
             steps,
             list_state,
             should_quit: false,
-            executor: ExecutionContext::new(),
+            executor: Executor::new(),
             tx,
             rx,
         }
@@ -155,7 +161,7 @@ impl App {
         // Render the details
         let details = Paragraph::new(detail_text)
             .block(Block::default().title(" Details ").borders(Borders::ALL))
-            .wrap(ratatui::widgets::Wrap { trim: false });
+            .wrap(ratatui::widgets::Wrap { trim: true });
 
         frame.render_widget(details, chunks[1]);
     }
@@ -180,7 +186,8 @@ impl App {
                 }
 
                 let tx = self.tx.clone();
-                let current_dir = self.executor.current_dir.clone();
+                let current_dir = self.executor.context.current_dir.clone();
+                let env_vars = self.executor.context.env_vars.clone();
                 let index = i;
 
                 // Mark as running immediately for UI feedback
@@ -188,9 +195,33 @@ impl App {
                 self.steps[i].output.clear();
 
                 thread::spawn(move || {
-                    let mut local_executor = ExecutionContext { current_dir };
-                    let (status, output) = local_executor.execute(&content);
-                    let _ = tx.send(ExecutionMessage::Finished(index, status, output));
+                    let mut local_executor = Executor {
+                        context: ExecutionContext {
+                            current_dir,
+                            env_vars,
+                        },
+                    };
+                    let (stream_tx, stream_rx) = mpsc::channel::<String>();
+
+                    let tx_for_streaming = tx.clone();
+                    let thread_index = index;
+
+                    // Spawn a sub-thread to forward streaming output to the main app
+                    thread::spawn(move || {
+                        while let Ok(partial) = stream_rx.recv() {
+                            let _ = tx_for_streaming
+                                .send(ExecutionMessage::OutputPartial(thread_index, partial));
+                        }
+                    });
+
+                    let status = local_executor.execute_streamed(&content, stream_tx);
+
+                    let _ = tx.send(ExecutionMessage::Finished(
+                        index,
+                        status,
+                        local_executor.context.current_dir,
+                        local_executor.context.env_vars,
+                    ));
                 });
             }
         }
@@ -198,15 +229,53 @@ impl App {
 
     /// Polls for messages from the execution thread.
     pub fn update(&mut self) {
+        let mut messages = Vec::new();
         while let Ok(message) = self.rx.try_recv() {
+            messages.push(message);
+        }
+
+        for message in messages {
             match message {
-                ExecutionMessage::Finished(i, status, output) => {
+                ExecutionMessage::OutputPartial(i, partial) => {
+                    if let Some(step) = self.steps.get_mut(i) {
+                        Self::append_output(&mut step.output, &partial);
+                    }
+                }
+                ExecutionMessage::Finished(i, status, new_dir, new_env) => {
                     if let Some(step) = self.steps.get_mut(i) {
                         step.status = status;
-                        step.output = output;
                     }
+                    // Sync context back to app
+                    self.executor.context.current_dir = new_dir;
+                    self.executor.context.env_vars = new_env;
                 }
             }
         }
+    }
+
+    /// Appends output to the buffer, handling carriage returns and ANSI sequences.
+    fn append_output(buffer: &mut String, new_data: &str) {
+        let cleaned = Self::clean_ansi(new_data);
+        for c in cleaned.chars() {
+            if c == '\r' {
+                // Handle carriage return: truncate the current line
+                if let Some(last_newline) = buffer.rfind('\n') {
+                    buffer.truncate(last_newline + 1);
+                } else {
+                    buffer.clear();
+                }
+            } else {
+                buffer.push(c);
+            }
+        }
+    }
+
+    /// Robust ANSI sequence cleaning.
+    fn clean_ansi(s: &str) -> String {
+        // Corrected regex for ANSI escape sequences:
+        // - Escaped [ after the first group: \[
+        // - Simplified to be safer and correct
+        let re = Regex::new(r"[\x1b\x9b]\[[()#;?]*([0-9A-Za-z;?]*[A-PR-Zcf-ntqry=><~])").unwrap();
+        re.replace_all(s, "").to_string()
     }
 }
