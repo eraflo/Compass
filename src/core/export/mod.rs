@@ -27,11 +27,11 @@ pub mod formats;
 pub mod models;
 
 use crate::core::models::{Step, StepStatus};
+use anyhow::Result;
+use chrono::{Local, Utc};
 use models::{
     EnvironmentInfo, ExportReport, ExportedCodeBlock, ExportedStep, ReportMetadata, ReportSummary,
 };
-use anyhow::Result;
-use chrono::{Local, Utc};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
@@ -86,10 +86,22 @@ impl Exporter {
         // Calculate summary statistics (only executable steps)
         let executable_steps: Vec<&Step> = steps.iter().filter(|s| s.is_executable()).collect();
         let total_steps = executable_steps.len();
-        let completed_steps = executable_steps.iter().filter(|s| s.status == StepStatus::Success).count();
-        let failed_steps = executable_steps.iter().filter(|s| s.status == StepStatus::Failed).count();
-        let running_steps = executable_steps.iter().filter(|s| s.status == StepStatus::Running).count();
-        let pending_steps = executable_steps.iter().filter(|s| s.status == StepStatus::Pending).count();
+        let completed_steps = executable_steps
+            .iter()
+            .filter(|s| s.status == StepStatus::Success)
+            .count();
+        let failed_steps = executable_steps
+            .iter()
+            .filter(|s| s.status == StepStatus::Failed)
+            .count();
+        let running_steps = executable_steps
+            .iter()
+            .filter(|s| s.status == StepStatus::Running)
+            .count();
+        let pending_steps = executable_steps
+            .iter()
+            .filter(|s| s.status == StepStatus::Pending)
+            .count();
 
         #[allow(clippy::cast_precision_loss)]
         let completion_percentage = if total_steps > 0 {
@@ -198,10 +210,10 @@ impl Exporter {
     /// Returns an error if any file cannot be written.
     pub fn export_both(report: &ExportReport, base_dir: &Path) -> Result<(PathBuf, PathBuf)> {
         let (json_path, md_path) = Self::default_output_paths(base_dir);
-        
+
         let json_result = Self::export_json(report, &json_path)?;
         let md_result = Self::export_markdown(report, &md_path)?;
-        
+
         Ok((json_result, md_result))
     }
 }
@@ -275,7 +287,7 @@ mod tests {
         Exporter::export_markdown(&report, &output_path)?;
 
         let content = fs::read_to_string(&output_path)?;
-        
+
         // Check for key elements in the rendered template
         assert!(content.contains("# 🧭 Compass Session Report"));
         assert!(content.contains("**Compass Version:** 1.0.0"));
@@ -283,10 +295,10 @@ mod tests {
         assert!(content.contains("Completed | 1"));
         assert!(content.contains("Install Dependencies"));
         assert!(content.contains("npm install"));
-        
+
         // Cleanup
         let _ = fs::remove_file(output_path);
-        
+
         Ok(())
     }
 

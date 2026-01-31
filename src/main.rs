@@ -65,8 +65,8 @@ fn main() -> anyhow::Result<()> {
                 .with_context(|| format!("Failed to resolve path: {file}"))?;
 
             println!("Reading: {}...", canonical_path.display());
-            let content =
-                fs::read_to_string(&canonical_path).with_context(|| format!("Failed to read file: {file}"))?;
+            let content = fs::read_to_string(&canonical_path)
+                .with_context(|| format!("Failed to read file: {file}"))?;
 
             let steps = core::parser::parse_readme(&content);
 

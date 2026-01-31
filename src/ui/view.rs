@@ -48,26 +48,16 @@ fn render_status_bar(frame: &mut Frame, area: Rect, app: &App) {
             Style::default().fg(Color::Green),
         ),
         if failed > 0 {
-            Span::styled(
-                format!("❌ {failed} "),
-                Style::default().fg(Color::Red),
-            )
+            Span::styled(format!("❌ {failed} "), Style::default().fg(Color::Red))
         } else {
             Span::raw("")
         },
         Span::styled("│", Style::default().fg(Color::DarkGray)),
-        Span::styled(
-            " ? Help ",
-            Style::default().fg(Color::Yellow),
-        ),
-        Span::styled(
-            "│ s Save │ q Quit ",
-            Style::default().fg(Color::DarkGray),
-        ),
+        Span::styled(" ? Help ", Style::default().fg(Color::Yellow)),
+        Span::styled("│ s Save │ q Quit ", Style::default().fg(Color::DarkGray)),
     ]);
 
-    let status_bar = Paragraph::new(status_line)
-        .style(Style::default().bg(Color::Rgb(30, 30, 40)));
+    let status_bar = Paragraph::new(status_line).style(Style::default().bg(Color::Rgb(30, 30, 40)));
 
     frame.render_widget(status_bar, area);
 }

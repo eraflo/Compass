@@ -46,7 +46,7 @@ pub fn check_dependencies(steps: &[Step]) -> CheckResult {
 
             for line in block.content.lines() {
                 let line = line.trim();
-                
+
                 // Skip comments and common non-command lines
                 if line.is_empty() || line.starts_with('#') {
                     continue;
@@ -81,10 +81,10 @@ pub fn check_dependencies(steps: &[Step]) -> CheckResult {
                         }
 
                         // Filter out paths (./script), builtins, and variables ($VAR)
-                        if !target_cmd.contains('/') 
+                        if !target_cmd.contains('/')
                             && !target_cmd.contains('\\')
                             && !target_cmd.starts_with('$')
-                            && !builtins.contains(target_cmd) 
+                            && !builtins.contains(target_cmd)
                         {
                             candidates.insert(target_cmd.to_string());
                         }
@@ -114,15 +114,14 @@ pub fn check_dependencies(steps: &[Step]) -> CheckResult {
 fn get_builtins() -> HashSet<&'static str> {
     HashSet::from([
         // Shell builtins & common utils usually present
-        "cd", "echo", "printf", "export", "unset", "set", "alias", "unalias",
-        "source", ".", "eval", "exec", "exit", "return", "true", "false",
-        "test", "[", "[[", "read", "wait", "bg", "fg", "jobs", "kill",
-        "history", "pwd", "pushd", "popd", "dirs", "shift", "umask",
-        "if", "then", "else", "elif", "fi", "for", "while", "until", "do", "done",
-        "case", "esac", "function", "select", "break", "continue",
-        
+        "cd", "echo", "printf", "export", "unset", "set", "alias", "unalias", "source", ".", "eval",
+        "exec", "exit", "return", "true", "false", "test", "[", "[[", "read", "wait", "bg", "fg",
+        "jobs", "kill", "history", "pwd", "pushd", "popd", "dirs", "shift", "umask", "if", "then",
+        "else", "elif", "fi", "for", "while", "until", "do", "done", "case", "esac", "function",
+        "select", "break",
+        "continue",
         // Common standard utilities (often expected to assume present, but debatable)
-        // Leaving these out of builtins means we WILL check for them, 
+        // Leaving these out of builtins means we WILL check for them,
         // which is good: a fresh container might miss 'curl' or 'git'.
         // So we strictly keep to shell syntax keywords.
     ])

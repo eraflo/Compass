@@ -84,8 +84,12 @@ impl ConfigManager {
 
         // Ensure the config directory exists
         if !config_dir.exists() {
-            fs::create_dir_all(&config_dir)
-                .with_context(|| format!("Failed to create config directory: {}", config_dir.display()))?;
+            fs::create_dir_all(&config_dir).with_context(|| {
+                format!(
+                    "Failed to create config directory: {}",
+                    config_dir.display()
+                )
+            })?;
         }
 
         Ok(Self {
@@ -102,7 +106,7 @@ impl ConfigManager {
     fn get_config_dir() -> Result<PathBuf> {
         let proj_dirs = ProjectDirs::from(APP_QUALIFIER, APP_ORGANIZATION, APP_NAME)
             .context("Could not determine project directories for configuration")?;
-        
+
         Ok(proj_dirs.config_dir().to_path_buf())
     }
 
@@ -133,18 +137,23 @@ impl ConfigManager {
         let canonical_path = readme_path
             .canonicalize()
             .unwrap_or_else(|_| readme_path.to_path_buf());
-        
+
         let config_filename = Self::readme_config_filename(&canonical_path);
         let config_file_path = self.config_dir.join(&config_filename);
-        
+
         self.config_file_path = Some(config_file_path.clone());
 
         if config_file_path.exists() {
-            let content = fs::read_to_string(&config_file_path)
-                .with_context(|| format!("Failed to read config file: {}", config_file_path.display()))?;
-            
-            self.current_config = serde_json::from_str(&content)
-                .with_context(|| format!("Failed to parse config file: {}", config_file_path.display()))?;
+            let content = fs::read_to_string(&config_file_path).with_context(|| {
+                format!("Failed to read config file: {}", config_file_path.display())
+            })?;
+
+            self.current_config = serde_json::from_str(&content).with_context(|| {
+                format!(
+                    "Failed to parse config file: {}",
+                    config_file_path.display()
+                )
+            })?;
         } else {
             // Initialize with defaults
             self.current_config = ReadmeConfig {
@@ -163,7 +172,8 @@ impl ConfigManager {
     ///
     /// Returns an error if the configuration cannot be written to disk.
     pub fn save(&self) -> Result<()> {
-        let config_file_path = self.config_file_path
+        let config_file_path = self
+            .config_file_path
             .as_ref()
             .context("No configuration file path set. Call load_for_readme first.")?;
 
@@ -174,8 +184,12 @@ impl ConfigManager {
         let content = serde_json::to_string_pretty(&config_to_save)
             .context("Failed to serialize configuration")?;
 
-        fs::write(config_file_path, content)
-            .with_context(|| format!("Failed to write config file: {}", config_file_path.display()))?;
+        fs::write(config_file_path, content).with_context(|| {
+            format!(
+                "Failed to write config file: {}",
+                config_file_path.display()
+            )
+        })?;
 
         Ok(())
     }
@@ -217,7 +231,9 @@ impl ConfigManager {
     /// * `placeholders` - A map of placeholder names to values.
     pub fn update_placeholders(&mut self, placeholders: &HashMap<String, String>) {
         for (key, value) in placeholders {
-            self.current_config.placeholders.insert(key.clone(), value.clone());
+            self.current_config
+                .placeholders
+                .insert(key.clone(), value.clone());
         }
     }
 
@@ -251,20 +267,20 @@ mod tests {
     fn test_readme_config_filename_uniqueness() {
         let path1 = Path::new("/home/user/project/README.md");
         let path2 = Path::new("/home/user/other/README.md");
-        
+
         let filename1 = ConfigManager::readme_config_filename(path1);
         let filename2 = ConfigManager::readme_config_filename(path2);
-        
+
         assert_ne!(filename1, filename2);
     }
 
     #[test]
     fn test_readme_config_filename_consistency() {
         let path = Path::new("/home/user/project/README.md");
-        
+
         let filename1 = ConfigManager::readme_config_filename(path);
         let filename2 = ConfigManager::readme_config_filename(path);
-        
+
         assert_eq!(filename1, filename2);
     }
 }

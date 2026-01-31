@@ -27,10 +27,12 @@ pub fn export(report: &ExportReport, output_path: &Path) -> Result<PathBuf> {
     env.add_template("report.md", MARKDOWN_TEMPLATE)
         .context("Failed to load markdown template")?;
 
-    let template = env.get_template("report.md")
+    let template = env
+        .get_template("report.md")
         .context("Failed to get markdown template")?;
 
-    let rendered = template.render(report)
+    let rendered = template
+        .render(report)
         .context("Failed to render markdown report")?;
 
     // Ensure parent directory exists
@@ -42,8 +44,12 @@ pub fn export(report: &ExportReport, output_path: &Path) -> Result<PathBuf> {
         }
     }
 
-    fs::write(output_path, rendered)
-        .with_context(|| format!("Failed to write Markdown report to: {}", output_path.display()))?;
+    fs::write(output_path, rendered).with_context(|| {
+        format!(
+            "Failed to write Markdown report to: {}",
+            output_path.display()
+        )
+    })?;
 
     Ok(output_path.to_path_buf())
 }
