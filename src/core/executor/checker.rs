@@ -42,7 +42,7 @@ pub fn check_dependencies(steps: &[Step]) -> CheckResult {
             });
 
             if !is_shell {
-                 if let Some(lang) = &block.language {
+                if let Some(lang) = &block.language {
                     let handler = get_language_handler(Some(lang));
                     let cmd = handler.get_required_command();
                     // Filter out fallback shells (sh, powershell, cmd) returned by the default handler
