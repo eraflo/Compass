@@ -1,3 +1,18 @@
+# [1.2.0](https://github.com/eraflo/Compass/compare/v1.1.0...v1.2.0) (2026-01-31)
+
+
+### Bug Fixes
+
+* clippy errors ([8d440ed](https://github.com/eraflo/Compass/commit/8d440edf456f6e4ff45fe51549ba1e46eb945211))
+* coloration and build windows and mac ([f57b258](https://github.com/eraflo/Compass/commit/f57b2583c12376cb953bd10b4053109cb45e9af8))
+* fmt ([c3b1038](https://github.com/eraflo/Compass/commit/c3b10389b1d3547c09c4735ce6ccbad1cf923ee6))
+
+
+### Features
+
+* export report and help modal ([9e6121d](https://github.com/eraflo/Compass/commit/9e6121d8cb4933758008081e07d991980fe75c1a))
+* safety check and validation + clean ouput and modal ([3d4d43a](https://github.com/eraflo/Compass/commit/3d4d43aae96d3b9d2919a337707d68eec0f2091b))
+
 # [1.1.0](https://github.com/eraflo/Compass/compare/v1.0.0...v1.1.0) (2026-01-31)
 
 
