@@ -40,14 +40,15 @@ pub fn render_details(frame: &mut Frame, area: Rect, step: Option<&Step>, scroll
 
     // Calculate estimated height
     let inner_width = area.width.saturating_sub(2); // borders
-    let mut total_lines = 0;
+    let mut total_lines: u16 = 0;
     if inner_width > 0 {
         for line in detail_text.lines() {
+            #[allow(clippy::cast_possible_truncation)]
             let line_len = line.chars().count() as u16;
             if line_len == 0 {
                 total_lines += 1;
             } else {
-                total_lines += (line_len + inner_width - 1) / inner_width;
+                total_lines += line_len.div_ceil(inner_width);
             }
         }
     }
@@ -59,5 +60,5 @@ pub fn render_details(frame: &mut Frame, area: Rect, step: Option<&Step>, scroll
 
     frame.render_widget(details, area);
 
-    total_lines as u16
+    total_lines
 }

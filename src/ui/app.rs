@@ -102,14 +102,19 @@ impl App {
         self.details_scroll = 0;
     }
 
-    pub fn scroll_details_up(&mut self) {
+    pub const fn scroll_details_up(&mut self) {
         self.details_scroll = self.details_scroll.saturating_sub(5);
     }
 
-    pub fn scroll_details_down(&mut self) {
+    pub const fn scroll_details_down(&mut self) {
         let max_scroll = self.content_height.saturating_sub(self.viewport_height);
         if self.details_scroll < max_scroll {
-            self.details_scroll = self.details_scroll.saturating_add(5).min(max_scroll);
+            // min is const stable for u16 since 1.32
+            self.details_scroll = if self.details_scroll.saturating_add(5) < max_scroll {
+                self.details_scroll.saturating_add(5)
+            } else {
+                max_scroll
+            };
         }
     }
 

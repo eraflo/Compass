@@ -43,7 +43,7 @@ impl CommandBuilder {
                 block_content = block_content.replace(&target_brace, val);
             }
             content.push_str(&block_content);
-            content.push_str("\n");
+            content.push('\n');
         }
         content
     }

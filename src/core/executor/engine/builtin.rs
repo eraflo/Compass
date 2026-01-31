@@ -13,6 +13,7 @@
 // limitations under the License.
 
 use super::context::ExecutionContext;
+use std::fmt::Write;
 
 /// Handles "built-in" commands that affect the `ExecutionContext` directly.
 pub struct BuiltinHandler;
@@ -27,7 +28,6 @@ impl BuiltinHandler {
 
         for line in cmd_content.lines() {
             let trimmed = line.trim();
-            let mut handled_exclusively = false;
 
             // Detect 'cd'
             if let Some(rest) = trimmed.strip_prefix("cd ") {
@@ -46,12 +46,13 @@ impl BuiltinHandler {
                     }
 
                     context.current_dir = final_path;
-                    simulated_output.push_str(&format!(
-                        "cd: {} (Handled by Compass)\n",
+                    let _ = writeln!(
+                        simulated_output,
+                        "cd: {} (Handled by Compass)",
                         context.current_dir.display()
-                    ));
+                    );
                 }
-                handled_exclusively = true;
+                continue;
             }
 
             // Detect 'export'
@@ -63,18 +64,17 @@ impl BuiltinHandler {
                         .env_vars
                         .insert(key.trim().to_string(), val.to_string());
 
-                    simulated_output.push_str(&format!(
-                        "export: {}={} (Handled by Compass)\n",
+                    let _ = writeln!(
+                        simulated_output,
+                        "export: {}={} (Handled by Compass)",
                         key.trim(),
                         val
-                    ));
+                    );
                 }
-                handled_exclusively = true;
+                continue;
             }
 
-            if !handled_exclusively {
-                remaining_lines.push(line);
-            }
+            remaining_lines.push(line);
         }
 
         (remaining_lines.join("\n"), simulated_output)

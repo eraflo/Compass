@@ -69,7 +69,7 @@ pub fn render_input_modal(frame: &mut Frame, area: Rect, var_name: &str, current
     frame.render_widget(Clear, area);
 
     // Dynamic title to ensure visibility of input
-    let title = format!(" [ Input: {} ] (Typing: \"{}\") ", var_name, current_input);
+    let title = format!(" [ Input: {var_name} ] (Typing: \"{current_input}\") ");
 
     let block = Block::default()
         .title(Span::styled(
@@ -85,33 +85,34 @@ pub fn render_input_modal(frame: &mut Frame, area: Rect, var_name: &str, current
                 .add_modifier(Modifier::BOLD),
         );
 
-    let mut text = Vec::new();
-    text.push(Line::from(""));
-    text.push(Line::from(vec![
-        Span::raw("  Please provide a value for: "),
-        Span::styled(
-            var_name,
-            Style::default()
-                .fg(Color::Yellow)
-                .add_modifier(Modifier::BOLD),
-        ),
-    ]));
-    text.push(Line::from(""));
-    text.push(Line::from(vec![
-        Span::raw("  > "),
-        Span::styled(
-            current_input,
-            Style::default()
-                .fg(Color::Cyan)
-                .add_modifier(Modifier::BOLD),
-        ),
-        Span::styled("█", Style::default().fg(Color::White)),
-    ]));
-    text.push(Line::from(""));
-    text.push(Line::from(Span::styled(
-        "  (Enter: Confirm | Esc: Cancel)",
-        Style::default().fg(Color::DarkGray),
-    )));
+    let text = vec![
+        Line::from(""),
+        Line::from(vec![
+            Span::raw("  Please provide a value for: "),
+            Span::styled(
+                var_name,
+                Style::default()
+                    .fg(Color::Yellow)
+                    .add_modifier(Modifier::BOLD),
+            ),
+        ]),
+        Line::from(""),
+        Line::from(vec![
+            Span::raw("  > "),
+            Span::styled(
+                current_input,
+                Style::default()
+                    .fg(Color::Cyan)
+                    .add_modifier(Modifier::BOLD),
+            ),
+            Span::styled("█", Style::default().fg(Color::White)),
+        ]),
+        Line::from(""),
+        Line::from(Span::styled(
+            "  (Enter: Confirm | Esc: Cancel)",
+            Style::default().fg(Color::DarkGray),
+        )),
+    ];
 
     let paragraph = Paragraph::new(text).block(block).wrap(Wrap { trim: false });
 

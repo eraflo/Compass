@@ -24,10 +24,8 @@ pub fn handle_input(app: &mut App, key: KeyEvent) {
             KeyCode::Char('q') => app.should_quit = true,
             KeyCode::Down | KeyCode::Char('j') => app.next(),
             KeyCode::Up | KeyCode::Char('k') => app.previous(),
-            KeyCode::Char('J') => app.scroll_details_down(),
-            KeyCode::Char('K') => app.scroll_details_up(),
-            KeyCode::PageDown => app.scroll_details_down(),
-            KeyCode::PageUp => app.scroll_details_up(),
+            KeyCode::Char('J') | KeyCode::PageDown => app.scroll_details_down(),
+            KeyCode::Char('K') | KeyCode::PageUp => app.scroll_details_up(),
             KeyCode::Enter => {
                 handlers::execute_selected(app);
             }

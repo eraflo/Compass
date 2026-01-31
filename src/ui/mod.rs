@@ -58,6 +58,7 @@ fn run_loop(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>, mut app: App)
         terminal.draw(|f| view::draw(f, &mut app))?;
 
         if matches!(event::poll(std::time::Duration::from_millis(100)), Ok(true)) {
+            #[allow(clippy::collapsible_if)]
             if let Ok(Event::Key(key)) = event::read() {
                 if key.kind == KeyEventKind::Press {
                     events::input::handle_input(&mut app, key);

@@ -59,8 +59,7 @@ pub fn update(app: &mut App) {
                 }
             }
             ExecutionMessage::Finished(i, status, new_dir, new_env) => {
-                let mut scroll_target = 0;
-                if let Some(step) = app.steps.get_mut(i) {
+                let scroll_target = if let Some(step) = app.steps.get_mut(i) {
                     step.status = status;
                     let finish_status = match status {
                         StepStatus::Success => "✅ Execution finished successfully.",
@@ -76,8 +75,13 @@ pub fn update(app: &mut App) {
                         .iter()
                         .map(|b| b.content.lines().count() + 2)
                         .sum();
-                    scroll_target = (description_height + code_blocks_height + 2) as u16;
-                }
+
+                    #[allow(clippy::cast_possible_truncation)]
+                    let target = (description_height + code_blocks_height + 2) as u16;
+                    target
+                } else {
+                    0
+                };
 
                 app.details_scroll = scroll_target;
                 app.execution_manager.executor.context.current_dir = new_dir;
@@ -101,6 +105,7 @@ pub fn perform_execution(app: &mut App, bypass_safety: bool) {
     if let Some(i) = app.list_state.selected() {
         // Check if already running
         if let Some(step) = app.steps.get(i) {
+            #[allow(clippy::collapsible_if)]
             if step.status == StepStatus::Running {
                 return;
             }
@@ -136,6 +141,7 @@ pub fn perform_execution(app: &mut App, bypass_safety: bool) {
 
         // Safety Shield
         if !bypass_safety {
+            #[allow(clippy::collapsible_if)]
             if let Some(pattern) = SafetyShield::check(&content) {
                 app.safety_pattern = Some(pattern.to_string());
                 app.mode = Mode::SafetyAlert;
