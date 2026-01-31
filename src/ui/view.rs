@@ -156,6 +156,11 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
                 popups::notification::render(frame, frame.area(), success, message);
             }
         }
+        Mode::RecoveryAlert => {
+            if let Some(ref rec) = app.recovery_suggestion {
+                popups::recovery::render(frame, frame.area(), rec);
+            }
+        }
         Mode::Normal => {}
     }
 }

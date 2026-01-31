@@ -27,6 +27,9 @@ pub fn get_language_handler(lang_id: Option<&str>) -> Box<dyn LanguageDefinition
         Some("rust" | "rs") => Box::new(strategies::rust::RustHandler),
         Some("php") => Box::new(strategies::php::PhpHandler),
         Some("ruby" | "rb") => Box::new(strategies::ruby::RubyHandler),
-        _ => Box::new(strategies::shell::ShellHandler),
+        Some("bash" | "sh" | "zsh") => Box::new(strategies::shell::ShellHandler::new("bash")),
+        Some("cmd" | "batch") => Box::new(strategies::shell::ShellHandler::new("cmd")),
+        Some("powershell" | "pwsh") => Box::new(strategies::shell::ShellHandler::new("powershell")),
+        _ => Box::new(strategies::shell::ShellHandler::new("default")),
     }
 }

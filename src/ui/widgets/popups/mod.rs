@@ -16,4 +16,5 @@ pub mod dependency;
 pub mod help;
 pub mod input;
 pub mod notification;
+pub mod recovery;
 pub mod safety;

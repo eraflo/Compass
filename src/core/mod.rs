@@ -22,10 +22,10 @@
 //! - `models` - Data models (`Step`, `CodeBlock`, `StepStatus`)
 //! - `parser` - Markdown README parser
 
-pub mod config;
-pub mod docker;
+pub mod analysis;
 pub mod executor;
 pub mod export;
 pub mod fetcher;
+pub mod infrastructure;
 pub mod models;
 pub mod parser;

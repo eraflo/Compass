@@ -28,6 +28,7 @@ pub fn render_step_list(frame: &mut Frame, area: Rect, steps: &[Step], list_stat
                 StepStatus::Running => ("⏳ ", Style::default().fg(Color::Yellow)),
                 StepStatus::Success => ("✅ ", Style::default().fg(Color::Green)),
                 StepStatus::Failed => ("❌ ", Style::default().fg(Color::Red)),
+                StepStatus::Skipped => ("🚫 ", Style::default().fg(Color::DarkGray)),
                 StepStatus::Pending => {
                     if step.is_executable() {
                         ("⚡ ", Style::default().fg(Color::Cyan))

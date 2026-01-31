@@ -141,6 +141,7 @@ impl Exporter {
             StepStatus::Running => "🔄 Running".to_string(),
             StepStatus::Success => "✅ Success".to_string(),
             StepStatus::Failed => "❌ Failed".to_string(),
+            StepStatus::Skipped => "🚫 Skipped".to_string(),
         }
     }
 
@@ -236,6 +237,7 @@ mod tests {
                 }],
                 status: StepStatus::Success,
                 output: "added 1234 packages".to_string(),
+                condition: None,
             },
             Step {
                 title: "Configure Environment".to_string(),
@@ -247,6 +249,7 @@ mod tests {
                 }],
                 status: StepStatus::Pending,
                 output: String::new(),
+                condition: None,
             },
         ]
     }
