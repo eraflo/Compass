@@ -29,13 +29,11 @@ impl ShellHandler {
     }
 
     fn is_powershell(&self) -> bool {
-        self.lang == "powershell"
-            || (self.lang == "default" && cfg!(target_os = "windows"))
+        self.lang == "powershell" || (self.lang == "default" && cfg!(target_os = "windows"))
     }
 
     fn is_cmd(&self) -> bool {
-        self.lang == "cmd"
-            || (self.lang == "batch")
+        self.lang == "cmd" || (self.lang == "batch")
     }
 }
 
@@ -90,7 +88,7 @@ impl LanguageDefinition for ShellHandler {
                 prepared_path.to_string_lossy().to_string(),
             ]
         } else if self.is_cmd() {
-             vec![
+            vec![
                 cmd,
                 "/C".to_string(),
                 prepared_path.to_string_lossy().to_string(),

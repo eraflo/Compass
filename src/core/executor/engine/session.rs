@@ -54,8 +54,8 @@ impl ShellSession {
 
         // Prepare using Strategy
         let handler = get_language_handler(language);
-        
-        // Use a local temp directory to ensure compatibility with shells (WSL, Bash) 
+
+        // Use a local temp directory to ensure compatibility with shells (WSL, Bash)
         // that might have trouble with cross-drive paths or absolute Windows paths.
         let temp_dir = self.context.current_dir.join(".compass_temp");
         if !temp_dir.exists() {
