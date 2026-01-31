@@ -12,30 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::core::executor::{ExecutionContext, Executor};
-use crate::core::models::{Step, StepStatus};
-use ratatui::{
-    Frame,
-    layout::{Constraint, Direction, Layout},
-    style::{Color, Modifier, Style},
-    widgets::{Block, Borders, List, ListItem, ListState, Paragraph},
-};
-use regex::Regex;
-use std::collections::HashMap;
-use std::fmt::Write;
-use std::path::PathBuf;
-use std::sync::mpsc::{self, Receiver, Sender};
-use std::thread;
+use crate::core::config::ConfigManager;
+use crate::core::executor::ExecutionManager;
+use crate::core::models::Step;
+use crate::ui::state::Mode;
+use crate::ui::state::modal::ModalState;
 
-/// A message sent from the execution thread to the main app.
-pub enum ExecutionMessage {
-    /// Partial output captured from the PTY.
-    OutputPartial(usize, String),
-    /// Execution finished with status and final context.
-    Finished(usize, StepStatus, PathBuf, HashMap<String, String>),
-}
+use ratatui::widgets::ListState;
+use std::path::PathBuf;
+
+/// The current version of Compass (synchronized with Cargo.toml).
+pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// The main application state for the TUI.
+///
+/// This struct holds all the state necessary to render the UI and handle
+/// user interactions. It manages steps, execution, configuration, and modals.
 pub struct App {
     /// The list of steps parsed from the README.
     pub steps: Vec<Step>,
@@ -43,33 +35,100 @@ pub struct App {
     pub list_state: ListState,
     /// Whether the application should exit.
     pub should_quit: bool,
-    /// The execution engine.
-    pub executor: Executor,
-    /// Channel sender for threads.
-    pub tx: Sender<ExecutionMessage>,
-    /// Channel receiver for the main loop.
-    pub rx: Receiver<ExecutionMessage>,
+    /// The execution manager.
+    pub execution_manager: ExecutionManager,
+    /// Current UI mode.
+    pub mode: Mode,
+    /// Modal interface state.
+    pub modal: ModalState,
+    /// The dangerous pattern detected (for safety alert).
+    pub safety_pattern: Option<String>,
+    /// Scroll offset for the details panel.
+    pub details_scroll: u16,
+    /// Total height of the details content (wrapped).
+    pub content_height: u16,
+    /// Height of the details viewport.
+    pub viewport_height: u16,
+    /// Path to the README file being processed.
+    pub readme_path: PathBuf,
+    /// Configuration manager for persistent settings.
+    pub config_manager: Option<ConfigManager>,
+    /// Export notification message (success/error).
+    pub export_message: Option<(bool, String)>,
+    /// Scroll offset for the help modal.
+    pub help_scroll: u16,
 }
 
 impl App {
-    pub fn new(steps: Vec<Step>) -> Self {
+    /// Creates a new `App` with the given steps and README path.
+    ///
+    /// # Arguments
+    ///
+    /// * `steps` - The list of steps parsed from the README.
+    /// * `readme_path` - The path to the README file.
+    ///
+    /// # Returns
+    ///
+    /// A new `App` instance ready for rendering.
+    #[must_use]
+    pub fn new(steps: Vec<Step>, readme_path: PathBuf) -> Self {
         let mut list_state = ListState::default();
         if !steps.is_empty() {
             list_state.select(Some(0));
         }
-        let (tx, rx) = mpsc::channel();
+
+        // Initialize configuration manager
+        let config_manager = ConfigManager::new().ok();
+
         Self {
             steps,
             list_state,
             should_quit: false,
-            executor: Executor::new(),
-            tx,
-            rx,
+            execution_manager: ExecutionManager::new(),
+            mode: Mode::Normal,
+            modal: ModalState::new(),
+            safety_pattern: None,
+            details_scroll: 0,
+            content_height: 0,
+            viewport_height: 0,
+            readme_path,
+            config_manager,
+            export_message: None,
+            help_scroll: 0,
+        }
+    }
+
+    /// Loads configuration for the current README and pre-fills placeholders.
+    ///
+    /// This should be called after creating the App to restore any
+    /// previously saved placeholder values.
+    pub fn load_config(&mut self) {
+        #[allow(clippy::collapsible_if)]
+        if let Some(ref mut config) = self.config_manager {
+            if config.load_for_readme(&self.readme_path).is_ok() {
+                // Pre-fill the modal's variable store with saved values
+                for (key, value) in config.get_all_placeholders() {
+                    self.modal.variable_store.insert(key.clone(), value.clone());
+                }
+            }
+        }
+    }
+
+    /// Saves the current placeholder values to the configuration.
+    ///
+    /// This persists the user's input so it can be restored on next launch.
+    pub fn save_config(&mut self) {
+        if let Some(ref mut config) = self.config_manager {
+            config.update_placeholders(&self.modal.variable_store);
+            let _ = config.save(); // Ignore errors silently for now
         }
     }
 
     /// Selects the next step in the list.
     pub fn next(&mut self) {
+        if self.mode != Mode::Normal {
+            return;
+        }
         let i = match self.list_state.selected() {
             Some(i) => {
                 if i >= self.steps.len() - 1 {
@@ -81,10 +140,14 @@ impl App {
             None => 0,
         };
         self.list_state.select(Some(i));
+        self.details_scroll = 0;
     }
 
     /// Selects the previous step in the list.
     pub fn previous(&mut self) {
+        if self.mode != Mode::Normal {
+            return;
+        }
         let i = match self.list_state.selected() {
             Some(i) => {
                 if i == 0 {
@@ -96,182 +159,69 @@ impl App {
             None => 0,
         };
         self.list_state.select(Some(i));
+        self.details_scroll = 0;
     }
 
-    /// Renders the TUI.
-    pub fn render(&mut self, frame: &mut Frame) {
-        let chunks = Layout::default()
-            .direction(Direction::Horizontal)
-            .constraints([Constraint::Percentage(30), Constraint::Percentage(70)])
-            .split(frame.size());
-
-        // Sidebar: List of steps
-        let items: Vec<ListItem> = self
-            .steps
-            .iter()
-            .map(|step| {
-                let symbol = match step.status {
-                    StepStatus::Pending => "  ",
-                    StepStatus::Running => "⏳ ",
-                    StepStatus::Success => "✅ ",
-                    StepStatus::Failed => "❌ ",
-                };
-                let style = match step.status {
-                    StepStatus::Running => Style::default().fg(Color::Yellow),
-                    StepStatus::Success => Style::default().fg(Color::Green),
-                    StepStatus::Failed => Style::default().fg(Color::Red),
-                    StepStatus::Pending => Style::default().fg(Color::White),
-                };
-                ListItem::new(format!("{symbol}{title}", title = step.title)).style(style)
-            })
-            .collect();
-
-        // Render the list
-        let list = List::new(items)
-            .block(Block::default().title(" Steps ").borders(Borders::ALL))
-            .highlight_style(
-                Style::default()
-                    .bg(Color::Blue)
-                    .add_modifier(Modifier::BOLD),
-            )
-            .highlight_symbol(">> ");
-
-        frame.render_stateful_widget(list, chunks[0], &mut self.list_state);
-
-        // Main panel: Step details
-        let selected_index = self.list_state.selected().unwrap_or(0);
-        let detail_text = self.steps.get(selected_index).map_or_else(
-            || "No step selected.".to_string(),
-            |step| {
-                let mut content = format!("{}\n\n", step.description);
-                for block in &step.code_blocks {
-                    let lang = block.language.as_deref().unwrap_or("");
-                    let _ = write!(content, "```{}\n{}\n```\n\n", lang, block.content);
-                }
-
-                if !step.output.is_empty() {
-                    content.push_str("--- Output ---\n");
-                    content.push_str(&step.output);
-                }
-                content
-            },
-        );
-
-        // Render the details
-        let details = Paragraph::new(detail_text)
-            .block(Block::default().title(" Details ").borders(Borders::ALL))
-            .wrap(ratatui::widgets::Wrap { trim: true });
-
-        frame.render_widget(details, chunks[1]);
+    /// Scrolls the details panel up.
+    pub const fn scroll_details_up(&mut self) {
+        self.details_scroll = self.details_scroll.saturating_sub(5);
     }
 
-    /// Executes the currently selected step (Non-blocking).
-    pub fn execute_selected(&mut self) {
-        if let Some(i) = self.list_state.selected()
-            && let Some(step) = self.steps.get(i)
-        {
-            if step.status == StepStatus::Running {
-                return; // Already running
-            }
-
-            let content = step
-                .code_blocks
-                .iter()
-                .map(|b| b.content.as_str())
-                .collect::<Vec<_>>()
-                .join("\n");
-
-            if content.is_empty() {
-                return;
-            }
-
-            let tx = self.tx.clone();
-            let current_dir = self.executor.context.current_dir.clone();
-            let env_vars = self.executor.context.env_vars.clone();
-            let index = i;
-
-            // Mark as running immediately for UI feedback
-            self.steps[i].status = StepStatus::Running;
-            self.steps[i].output.clear();
-
-            thread::spawn(move || {
-                let mut local_executor = Executor {
-                    context: ExecutionContext {
-                        current_dir,
-                        env_vars,
-                    },
-                };
-                let (stream_tx, stream_rx) = mpsc::channel::<String>();
-
-                let tx_for_streaming = tx.clone();
-                let thread_index = index;
-
-                // Spawn a sub-thread to forward streaming output to the main app
-                thread::spawn(move || {
-                    while let Ok(partial) = stream_rx.recv() {
-                        let _ = tx_for_streaming
-                            .send(ExecutionMessage::OutputPartial(thread_index, partial));
-                    }
-                });
-
-                let status = local_executor.execute_streamed(&content, &stream_tx);
-
-                let _ = tx.send(ExecutionMessage::Finished(
-                    index,
-                    status,
-                    local_executor.context.current_dir,
-                    local_executor.context.env_vars,
-                ));
-            });
-        }
-    }
-
-    /// Polls for messages from the execution thread.
-    pub fn update(&mut self) {
-        let mut messages = Vec::new();
-        while let Ok(message) = self.rx.try_recv() {
-            messages.push(message);
-        }
-
-        for message in messages {
-            match message {
-                ExecutionMessage::OutputPartial(i, partial) => {
-                    if let Some(step) = self.steps.get_mut(i) {
-                        Self::append_output(&mut step.output, &partial);
-                    }
-                }
-                ExecutionMessage::Finished(i, status, new_dir, new_env) => {
-                    if let Some(step) = self.steps.get_mut(i) {
-                        step.status = status;
-                    }
-                    // Sync context back to app
-                    self.executor.context.current_dir = new_dir;
-                    self.executor.context.env_vars = new_env;
-                }
-            }
-        }
-    }
-
-    /// Appends output to the buffer, handling carriage returns and ANSI sequences.
-    fn append_output(buffer: &mut String, new_data: &str) {
-        let cleaned = Self::clean_ansi(new_data);
-        for c in cleaned.chars() {
-            if c == '\r' {
-                // Handle carriage return: truncate the current line
-                if let Some(last_newline) = buffer.rfind('\n') {
-                    buffer.truncate(last_newline + 1);
-                } else {
-                    buffer.clear();
-                }
+    /// Scrolls the details panel down.
+    pub const fn scroll_details_down(&mut self) {
+        let max_scroll = self.content_height.saturating_sub(self.viewport_height);
+        if self.details_scroll < max_scroll {
+            // min is const stable for u16 since 1.32
+            self.details_scroll = if self.details_scroll.saturating_add(5) < max_scroll {
+                self.details_scroll.saturating_add(5)
             } else {
-                buffer.push(c);
-            }
+                max_scroll
+            };
         }
     }
 
-    /// Robust ANSI sequence cleaning.
-    fn clean_ansi(s: &str) -> String {
-        let re = Regex::new(r"[\x1b\x9b]\[[()#;?]*([0-9A-Za-z;?]*[A-PR-Zcf-ntqry=><~])").unwrap();
-        re.replace_all(s, "").to_string()
+    /// Scrolls the help modal up.
+    pub const fn scroll_help_up(&mut self) {
+        self.help_scroll = self.help_scroll.saturating_sub(1);
+    }
+
+    /// Scrolls the help modal down.
+    pub const fn scroll_help_down(&mut self) {
+        self.help_scroll = self.help_scroll.saturating_add(1);
+    }
+
+    /// Cancels any active modal.
+    pub fn cancel_modal(&mut self) {
+        self.mode = Mode::Normal;
+        self.modal.input_buffer.clear();
+        self.modal.required_placeholders.clear();
+        self.safety_pattern = None;
+        self.export_message = None;
+    }
+
+    /// Gets the count of completed steps.
+    #[must_use]
+    pub fn completed_count(&self) -> usize {
+        use crate::core::models::StepStatus;
+        self.steps
+            .iter()
+            .filter(|s| s.is_executable() && s.status == StepStatus::Success)
+            .count()
+    }
+
+    /// Gets the count of failed steps.
+    #[must_use]
+    pub fn failed_count(&self) -> usize {
+        use crate::core::models::StepStatus;
+        self.steps
+            .iter()
+            .filter(|s| s.is_executable() && s.status == StepStatus::Failed)
+            .count()
+    }
+
+    /// Gets the count of total executable steps.
+    #[must_use]
+    pub fn total_executable_steps(&self) -> usize {
+        self.steps.iter().filter(|s| s.is_executable()).count()
     }
 }

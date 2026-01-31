@@ -13,21 +13,27 @@
 // limitations under the License.
 
 pub mod app;
+pub mod events;
+pub mod state;
+pub mod utils;
+pub mod view;
+pub mod widgets;
 
 use crate::core::models::Step;
 use crate::ui::app::App;
 use anyhow::Result;
 use crossterm::{
-    event::{self, Event, KeyCode, KeyEventKind},
+    event::{self, Event, KeyEventKind},
     execute,
     terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
 use ratatui::Terminal;
 use ratatui::backend::CrosstermBackend;
 use std::io;
+use std::path::PathBuf;
 
 /// Starts the TUI application.
-pub fn run_tui(steps: Vec<Step>) -> Result<()> {
+pub fn run_tui(steps: Vec<Step>, readme_path: PathBuf) -> Result<()> {
     // Setup terminal
     enable_raw_mode()?;
     let mut stdout = io::stdout();
@@ -36,7 +42,11 @@ pub fn run_tui(steps: Vec<Step>) -> Result<()> {
     let mut terminal = Terminal::new(backend)?; // Create terminal
 
     // Create app and run main loop
-    let app = App::new(steps);
+    let mut app = App::new(steps, readme_path);
+    
+    // Load persisted configuration (placeholders)
+    app.load_config();
+    
     let res = run_loop(&mut terminal, app);
 
     // Restore terminal
@@ -50,25 +60,18 @@ pub fn run_tui(steps: Vec<Step>) -> Result<()> {
 /// Runs the main loop of the TUI application.
 fn run_loop(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>, mut app: App) -> Result<()> {
     loop {
-        terminal.draw(|f| app.render(f))?;
+        terminal.draw(|f| view::draw(f, &mut app))?;
 
-        if matches!(event::poll(std::time::Duration::from_millis(100)), Ok(true))
-            && let Ok(Event::Key(key)) = event::read()
-            && key.kind == KeyEventKind::Press
-        {
-            match key.code {
-                KeyCode::Char('q') => return Ok(()),
-                KeyCode::Down | KeyCode::Char('j') => app.next(),
-                KeyCode::Up | KeyCode::Char('k') => app.previous(),
-                KeyCode::Enter => {
-                    app.execute_selected();
+        if matches!(event::poll(std::time::Duration::from_millis(100)), Ok(true)) {
+            #[allow(clippy::collapsible_if)]
+            if let Ok(Event::Key(key)) = event::read() {
+                if key.kind == KeyEventKind::Press {
+                    events::input::handle_input(&mut app, key);
                 }
-                _ => {}
             }
         }
 
-        // Poll for results from background threads
-        app.update();
+        events::handlers::update(&mut app);
 
         if app.should_quit {
             return Ok(());

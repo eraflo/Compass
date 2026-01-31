@@ -29,6 +29,8 @@ pub struct CodeBlock {
     pub language: Option<String>,
     /// The raw content of the code block.
     pub content: String,
+    /// Placeholders found in this block (e.g., "`VARIABLE_NAME`").
+    pub placeholders: Vec<String>,
 }
 
 /// A parsing step representing a section of the README.
@@ -44,4 +46,11 @@ pub struct Step {
     pub status: StepStatus,
     /// The captured output (stdout and stderr) from the last execution.
     pub output: String,
+}
+
+impl Step {
+    /// Checks if the step is executable (i.e., has code blocks).
+    pub const fn is_executable(&self) -> bool {
+        !self.code_blocks.is_empty()
+    }
 }

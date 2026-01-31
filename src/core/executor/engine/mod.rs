@@ -12,18 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! # Core Module
-//!
-//! This module contains the core functionality of Compass:
-//!
-//! - `config` - Persistent configuration management
-//! - `executor` - Command execution engine with PTY support
-//! - `export` - Session export to JSON and Markdown
-//! - `models` - Data models (`Step`, `CodeBlock`, `StepStatus`)
-//! - `parser` - Markdown README parser
+pub mod builder;
+pub mod builtin;
+pub mod context;
+pub mod core;
+pub mod manager;
+pub mod session;
 
-pub mod config;
-pub mod executor;
-pub mod export;
-pub mod models;
-pub mod parser;
+pub use builder::CommandBuilder;
+pub use context::ExecutionContext;
+pub use core::Executor;
+pub use manager::ExecutionManager;
