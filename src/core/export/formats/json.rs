@@ -19,8 +19,8 @@ use std::path::{Path, PathBuf};
 
 /// Exports the report to a JSON file.
 pub fn export(report: &ExportReport, output_path: &Path) -> Result<PathBuf> {
-    let content = serde_json::to_string_pretty(report)
-        .context("Failed to serialize report to JSON")?;
+    let content =
+        serde_json::to_string_pretty(report).context("Failed to serialize report to JSON")?;
 
     // Ensure parent directory exists
     #[allow(clippy::collapsible_if)]

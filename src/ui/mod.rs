@@ -43,10 +43,10 @@ pub fn run_tui(steps: Vec<Step>, readme_path: PathBuf) -> Result<()> {
 
     // Create app and run main loop
     let mut app = App::new(steps, readme_path);
-    
+
     // Load persisted configuration (placeholders)
     app.load_config();
-    
+
     let res = run_loop(&mut terminal, app);
 
     // Restore terminal

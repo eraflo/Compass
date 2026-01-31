@@ -73,7 +73,9 @@ pub fn render_details(frame: &mut Frame, area: Rect, step: Option<&Step>, scroll
                 Span::raw("```"),
                 Span::styled(
                     lang,
-                    Style::default().fg(Color::Yellow).add_modifier(Modifier::ITALIC),
+                    Style::default()
+                        .fg(Color::Yellow)
+                        .add_modifier(Modifier::ITALIC),
                 ),
             ]));
 
@@ -83,9 +85,13 @@ pub fn render_details(frame: &mut Frame, area: Rect, step: Option<&Step>, scroll
             let syntax = ps
                 .find_syntax_by_token(lang)
                 .unwrap_or_else(|| ps.find_syntax_plain_text());
-            
+
             // Use a dark theme that contrasts well with standard terminal backgrounds
-            let theme = &ts.themes.get("base16-ocean.dark").or_else(|| ts.themes.get("base16-mocha.dark")).unwrap_or_else(|| ts.themes.values().next().unwrap());
+            let theme = &ts
+                .themes
+                .get("base16-ocean.dark")
+                .or_else(|| ts.themes.get("base16-mocha.dark"))
+                .unwrap_or_else(|| ts.themes.values().next().unwrap());
             let mut h = HighlightLines::new(syntax, theme);
 
             // Content
@@ -93,15 +99,16 @@ pub fn render_details(frame: &mut Frame, area: Rect, step: Option<&Step>, scroll
                 // Syntect expects standard Rust strings, but technically prefers newlines for context.
                 // However, for single-pass highlighting of lines, this works well enough for display.
                 let ranges = h.highlight_line(line, ps).unwrap_or_default();
-                
+
                 let spans: Vec<Span> = ranges
                     .into_iter()
                     .map(|(style, text)| {
-                        let fg = Color::Rgb(style.foreground.r, style.foreground.g, style.foreground.b);
+                        let fg =
+                            Color::Rgb(style.foreground.r, style.foreground.g, style.foreground.b);
                         Span::styled(text, Style::default().fg(fg))
                     })
                     .collect();
-                
+
                 text_lines.push(Line::from(spans));
             }
 
@@ -114,9 +121,11 @@ pub fn render_details(frame: &mut Frame, area: Rect, step: Option<&Step>, scroll
         if !step.output.is_empty() {
             text_lines.push(Line::from(Span::styled(
                 "--- Output ---",
-                Style::default().fg(Color::Magenta).add_modifier(Modifier::BOLD),
+                Style::default()
+                    .fg(Color::Magenta)
+                    .add_modifier(Modifier::BOLD),
             )));
-            
+
             // Render ANSI output using ansi-to-tui
             match step.output.as_bytes().into_text() {
                 Ok(output_text) => {
@@ -126,8 +135,8 @@ pub fn render_details(frame: &mut Frame, area: Rect, step: Option<&Step>, scroll
                     // Fallback to plain text if parsing fails
                     for line in step.output.lines() {
                         text_lines.push(Line::from(Span::styled(
-                            line, 
-                            Style::default().fg(Color::Gray)
+                            line,
+                            Style::default().fg(Color::Gray),
                         )));
                     }
                 }
@@ -146,7 +155,7 @@ pub fn render_details(frame: &mut Frame, area: Rect, step: Option<&Step>, scroll
     if inner_width > 0 {
         for line in &text_lines {
             #[allow(clippy::cast_possible_truncation)]
-            let line_len = line.width() as u16; 
+            let line_len = line.width() as u16;
             if line_len == 0 {
                 total_lines += 1;
             } else {

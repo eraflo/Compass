@@ -36,37 +36,39 @@ pub fn render(frame: &mut Frame, area: Rect, scroll: u16) {
         .border_style(Style::default().fg(Color::Cyan));
 
     let help_items = vec![
-        ("Navigation", vec![
-            ("↑ / k", "Move to previous step"),
-            ("↓ / j", "Move to next step"),
-            ("PgUp / K", "Scroll details up"),
-            ("PgDown / J", "Scroll details down"),
-        ]),
-        ("Execution", vec![
-            ("Enter", "Execute the selected step"),
-            ("Esc", "Cancel current modal/action"),
-        ]),
-        ("Export & Save", vec![
-            ("s", "Save/export session report"),
-        ]),
-        ("Application", vec![
-            ("?", "Show this help panel"),
-            ("q", "Quit Compass"),
-        ]),
+        (
+            "Navigation",
+            vec![
+                ("↑ / k", "Move to previous step"),
+                ("↓ / j", "Move to next step"),
+                ("PgUp / K", "Scroll details up"),
+                ("PgDown / J", "Scroll details down"),
+            ],
+        ),
+        (
+            "Execution",
+            vec![
+                ("Enter", "Execute the selected step"),
+                ("Esc", "Cancel current modal/action"),
+            ],
+        ),
+        ("Export & Save", vec![("s", "Save/export session report")]),
+        (
+            "Application",
+            vec![("?", "Show this help panel"), ("q", "Quit Compass")],
+        ),
     ];
 
     let mut lines: Vec<Line> = vec![Line::from("")];
 
     for (section, shortcuts) in help_items {
         // Section header
-        lines.push(Line::from(vec![
-            Span::styled(
-                format!("  ─── {section} ───"),
-                Style::default()
-                    .fg(Color::Yellow)
-                    .add_modifier(Modifier::BOLD),
-            ),
-        ]));
+        lines.push(Line::from(vec![Span::styled(
+            format!("  ─── {section} ───"),
+            Style::default()
+                .fg(Color::Yellow)
+                .add_modifier(Modifier::BOLD),
+        )]));
         lines.push(Line::from(""));
 
         // Shortcuts

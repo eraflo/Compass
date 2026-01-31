@@ -210,11 +210,7 @@ pub fn export_report(app: &mut App) {
     // Export to both formats
     match Exporter::export_both(&report, base_dir) {
         Ok((json_path, md_path)) => {
-            let message = format!(
-                "{}\n{}",
-                json_path.display(),
-                md_path.display()
-            );
+            let message = format!("{}\n{}", json_path.display(), md_path.display());
             app.export_message = Some((true, message));
             app.mode = Mode::ExportNotification;
         }

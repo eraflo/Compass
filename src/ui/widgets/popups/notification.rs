@@ -46,7 +46,11 @@ pub fn render(frame: &mut Frame, area: Rect, success: bool, message: &str) {
         Line::from(vec![
             Span::raw("  "),
             Span::styled(
-                if success { "Report saved to:" } else { "Error:" },
+                if success {
+                    "Report saved to:"
+                } else {
+                    "Error:"
+                },
                 Style::default().fg(Color::White),
             ),
         ]),

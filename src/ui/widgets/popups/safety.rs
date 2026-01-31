@@ -15,7 +15,7 @@
 use crate::ui::utils::centered_rect;
 use ratatui::{
     Frame,
-    layout::{Rect, Alignment},
+    layout::{Alignment, Rect},
     style::{Color, Modifier, Style},
     widgets::{Block, Borders, Clear, Paragraph, Wrap},
 };
