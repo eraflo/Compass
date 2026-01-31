@@ -47,3 +47,10 @@ pub struct Step {
     /// The captured output (stdout and stderr) from the last execution.
     pub output: String,
 }
+
+impl Step {
+    /// Checks if the step is executable (i.e., has code blocks).
+    pub const fn is_executable(&self) -> bool {
+        !self.code_blocks.is_empty()
+    }
+}

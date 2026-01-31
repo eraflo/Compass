@@ -30,9 +30,10 @@ use crossterm::{
 use ratatui::Terminal;
 use ratatui::backend::CrosstermBackend;
 use std::io;
+use std::path::PathBuf;
 
 /// Starts the TUI application.
-pub fn run_tui(steps: Vec<Step>) -> Result<()> {
+pub fn run_tui(steps: Vec<Step>, readme_path: PathBuf) -> Result<()> {
     // Setup terminal
     enable_raw_mode()?;
     let mut stdout = io::stdout();
@@ -41,7 +42,11 @@ pub fn run_tui(steps: Vec<Step>) -> Result<()> {
     let mut terminal = Terminal::new(backend)?; // Create terminal
 
     // Create app and run main loop
-    let app = App::new(steps);
+    let mut app = App::new(steps, readme_path);
+    
+    // Load persisted configuration (placeholders)
+    app.load_config();
+    
     let res = run_loop(&mut terminal, app);
 
     // Restore terminal

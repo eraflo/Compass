@@ -118,3 +118,147 @@ pub fn render_input_modal(frame: &mut Frame, area: Rect, var_name: &str, current
 
     frame.render_widget(paragraph, area);
 }
+
+/// Renders the help modal with all keyboard shortcuts.
+///
+/// This modal displays a comprehensive list of all available commands
+/// and their corresponding keyboard shortcuts.
+pub fn render_help_modal(frame: &mut Frame, area: Rect, scroll: u16) {
+    let area = centered_rect(70, 70, area);
+    frame.render_widget(Clear, area);
+
+    let block = Block::default()
+        .title(Span::styled(
+            " 🧭 Compass - Help ",
+            Style::default()
+                .fg(Color::Cyan)
+                .add_modifier(Modifier::BOLD),
+        ))
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(Color::Cyan));
+
+    let help_items = vec![
+        ("Navigation", vec![
+            ("↑ / k", "Move to previous step"),
+            ("↓ / j", "Move to next step"),
+            ("PgUp / K", "Scroll details up"),
+            ("PgDown / J", "Scroll details down"),
+        ]),
+        ("Execution", vec![
+            ("Enter", "Execute the selected step"),
+            ("Esc", "Cancel current modal/action"),
+        ]),
+        ("Export & Save", vec![
+            ("s", "Save/export session report"),
+        ]),
+        ("Application", vec![
+            ("?", "Show this help panel"),
+            ("q", "Quit Compass"),
+        ]),
+    ];
+
+    let mut lines: Vec<Line> = vec![Line::from("")];
+
+    for (section, shortcuts) in help_items {
+        // Section header
+        lines.push(Line::from(vec![
+            Span::styled(
+                format!("  ─── {section} ───"),
+                Style::default()
+                    .fg(Color::Yellow)
+                    .add_modifier(Modifier::BOLD),
+            ),
+        ]));
+        lines.push(Line::from(""));
+
+        // Shortcuts
+        for (key, description) in shortcuts {
+            lines.push(Line::from(vec![
+                Span::raw("    "),
+                Span::styled(
+                    format!("{key:12}"),
+                    Style::default()
+                        .fg(Color::Green)
+                        .add_modifier(Modifier::BOLD),
+                ),
+                Span::styled(description, Style::default().fg(Color::White)),
+            ]));
+        }
+        lines.push(Line::from(""));
+    }
+
+    // Footer
+    lines.push(Line::from(""));
+    lines.push(Line::from(Span::styled(
+        "  Press Esc or ? to close this help panel",
+        Style::default().fg(Color::DarkGray),
+    )));
+
+    let paragraph = Paragraph::new(lines)
+        .block(block)
+        .wrap(Wrap { trim: false })
+        .scroll((scroll, 0));
+
+    frame.render_widget(paragraph, area);
+}
+
+/// Renders an export notification modal.
+///
+/// Displays a success or error message after an export operation.
+///
+/// # Arguments
+///
+/// * `frame` - The frame to render into.
+/// * `area` - The area available for rendering.
+/// * `success` - Whether the export was successful.
+/// * `message` - The message to display (file path or error).
+pub fn render_export_notification(frame: &mut Frame, area: Rect, success: bool, message: &str) {
+    let area = centered_rect(60, 30, area);
+    frame.render_widget(Clear, area);
+
+    let (title, title_color, border_color) = if success {
+        (" ✅ Export Successful ", Color::Green, Color::Green)
+    } else {
+        (" ❌ Export Failed ", Color::Red, Color::Red)
+    };
+
+    let block = Block::default()
+        .title(Span::styled(
+            title,
+            Style::default()
+                .fg(title_color)
+                .add_modifier(Modifier::BOLD),
+        ))
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(border_color));
+
+    let text = vec![
+        Line::from(""),
+        Line::from(vec![
+            Span::raw("  "),
+            Span::styled(
+                if success { "Report saved to:" } else { "Error:" },
+                Style::default().fg(Color::White),
+            ),
+        ]),
+        Line::from(""),
+        Line::from(vec![
+            Span::raw("  "),
+            Span::styled(
+                message,
+                Style::default()
+                    .fg(if success { Color::Cyan } else { Color::Red })
+                    .add_modifier(Modifier::BOLD),
+            ),
+        ]),
+        Line::from(""),
+        Line::from(Span::styled(
+            "  Press any key to continue...",
+            Style::default().fg(Color::DarkGray),
+        )),
+    ];
+
+    let paragraph = Paragraph::new(text).block(block).wrap(Wrap { trim: false });
+
+    frame.render_widget(paragraph, area);
+}

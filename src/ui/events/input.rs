@@ -18,6 +18,14 @@ use crate::ui::state::Mode;
 use crossterm::event::{KeyCode, KeyEvent};
 
 /// Handles key events and dispatches actions to the App.
+///
+/// This function is the main input dispatcher for the TUI. It routes
+/// key events to the appropriate handlers based on the current mode.
+///
+/// # Arguments
+///
+/// * `app` - The application state.
+/// * `key` - The key event to handle.
 pub fn handle_input(app: &mut App, key: KeyEvent) {
     match app.mode {
         Mode::Normal => match key.code {
@@ -28,6 +36,12 @@ pub fn handle_input(app: &mut App, key: KeyEvent) {
             KeyCode::Char('K') | KeyCode::PageUp => app.scroll_details_up(),
             KeyCode::Enter => {
                 handlers::execute_selected(app);
+            }
+            KeyCode::Char('?') => {
+                app.mode = Mode::HelpModal;
+            }
+            KeyCode::Char('s') => {
+                handlers::export_report(app);
             }
             _ => {}
         },
@@ -55,5 +69,18 @@ pub fn handle_input(app: &mut App, key: KeyEvent) {
             }
             _ => {}
         },
+        Mode::HelpModal => match key.code {
+            KeyCode::Esc | KeyCode::Char('?' | 'q') => {
+                app.mode = Mode::Normal;
+                app.help_scroll = 0; // Reset scroll when closing
+            }
+            KeyCode::Down | KeyCode::Char('j') => app.scroll_help_down(),
+            KeyCode::Up | KeyCode::Char('k') => app.scroll_help_up(),
+            _ => {}
+        },
+        Mode::ExportNotification => {
+            // Any key dismisses the notification
+            app.cancel_modal();
+        }
     }
 }

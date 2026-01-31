@@ -13,11 +13,16 @@
 // limitations under the License.
 
 use crate::core::executor::{CommandBuilder, SafetyShield};
+use crate::core::export::Exporter;
 use crate::core::models::StepStatus;
-use crate::ui::app::App;
+use crate::ui::app::{App, VERSION};
 use crate::ui::state::{ExecutionMessage, Mode};
 
 /// Handles submission of a placeholder value from the input modal.
+///
+/// When the user presses Enter in the input modal, this function
+/// stores the value and either moves to the next placeholder or
+/// triggers execution if all placeholders have been filled.
 pub fn submit_input(app: &mut App) {
     if app.mode != Mode::InputModal {
         return;
@@ -41,13 +46,17 @@ pub fn submit_input(app: &mut App) {
             .cloned()
             .unwrap_or_default();
     } else {
-        // All filled, now try to execute
+        // All filled, save config and execute
+        app.save_config();
         app.mode = Mode::Normal;
         perform_execution(app, false);
     }
 }
 
 /// Polls for messages from the execution thread and updates the UI state.
+///
+/// This function should be called regularly in the main loop to process
+/// execution updates (output and completion status).
 pub fn update(app: &mut App) {
     let messages = app.execution_manager.poll_messages();
 
@@ -92,11 +101,19 @@ pub fn update(app: &mut App) {
 }
 
 /// Executes the currently selected step (Non-blocking).
+///
+/// This is the main entry point for step execution. It handles placeholder
+/// prompts, safety checks, and spawns the background execution.
 pub fn execute_selected(app: &mut App) {
     perform_execution(app, false);
 }
 
 /// Internal helper to handle execution flow with safety checks.
+///
+/// # Arguments
+///
+/// * `app` - The application state.
+/// * `bypass_safety` - If true, skip safety checks (used after user confirmation).
 pub fn perform_execution(app: &mut App, bypass_safety: bool) {
     if app.mode != Mode::Normal {
         return;
@@ -117,7 +134,7 @@ pub fn perform_execution(app: &mut App, bypass_safety: bool) {
         if !step_placeholders.is_empty() && app.modal.required_placeholders.is_empty() {
             app.modal.reset(step_placeholders);
 
-            // Pre-fill with previous value if exists
+            // Pre-fill with previous value if exists (from config or previous input)
             if !app.modal.required_placeholders.is_empty() {
                 let first_var = &app.modal.required_placeholders[0];
                 app.modal.input_buffer = app
@@ -157,6 +174,8 @@ pub fn perform_execution(app: &mut App, bypass_safety: bool) {
 }
 
 /// Confirms execution of a dangerous command.
+///
+/// Called when the user presses Enter on the safety alert modal.
 pub fn confirm_safety(app: &mut App) {
     if app.mode != Mode::SafetyAlert {
         return;
@@ -164,4 +183,44 @@ pub fn confirm_safety(app: &mut App) {
     app.mode = Mode::Normal;
     app.safety_pattern = None;
     perform_execution(app, true);
+}
+
+/// Exports the current session to JSON and Markdown files.
+///
+/// The files are saved to the current working directory with timestamped names.
+/// The result (success or failure) is displayed in a notification modal.
+pub fn export_report(app: &mut App) {
+    if app.mode != Mode::Normal {
+        return;
+    }
+
+    // Generate the report
+    let report = Exporter::generate_report(
+        &app.steps,
+        &app.readme_path,
+        &app.execution_manager.executor.context.current_dir,
+        &app.execution_manager.executor.context.env_vars,
+        &app.modal.variable_store,
+        VERSION,
+    );
+
+    // Get the base directory (current working directory)
+    let base_dir = &app.execution_manager.executor.context.current_dir;
+
+    // Export to both formats
+    match Exporter::export_both(&report, base_dir) {
+        Ok((json_path, md_path)) => {
+            let message = format!(
+                "{}\n{}",
+                json_path.display(),
+                md_path.display()
+            );
+            app.export_message = Some((true, message));
+            app.mode = Mode::ExportNotification;
+        }
+        Err(e) => {
+            app.export_message = Some((false, e.to_string()));
+            app.mode = Mode::ExportNotification;
+        }
+    }
 }

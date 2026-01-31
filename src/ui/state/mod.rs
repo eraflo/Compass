@@ -29,9 +29,14 @@ pub enum ExecutionMessage {
 /// The various states the application UI can be in.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Mode {
+    /// Normal navigation mode.
     Normal,
     /// Waiting for user input to fill placeholders.
     InputModal,
     /// Waiting for confirmation of a dangerous command.
     SafetyAlert,
+    /// Displaying the help panel with all keyboard shortcuts.
+    HelpModal,
+    /// Displaying export success/failure message.
+    ExportNotification,
 }

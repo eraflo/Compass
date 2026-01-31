@@ -16,35 +16,102 @@ use crate::core::models::Step;
 use ratatui::{
     Frame,
     layout::Rect,
+    style::{Color, Modifier, Style},
+    text::{Line, Span},
     widgets::{Block, Borders, Paragraph, Wrap},
 };
-use std::fmt::Write;
 
+/// Renders the details panel for the selected step.
+///
+/// This panel shows:
+/// - Step description
+/// - Code block(s) with simple syntax highlighting
+/// - Execution output with basic ANSI color support
+///
+/// # Arguments
+///
+/// * `frame` - The frame to render into.
+/// * `area` - The available area for the widget.
+/// * `step` - The selected step to display.
+/// * `scroll` - The current vertical scroll offset.
+///
+/// # Returns
+///
+/// The total height of the content (for scrolling logic).
 pub fn render_details(frame: &mut Frame, area: Rect, step: Option<&Step>, scroll: u16) -> u16 {
-    let detail_text = step.map_or_else(
-        || "No step selected.".to_string(),
-        |step| {
-            let mut content = format!("{}\n\n", step.description);
-            for block in &step.code_blocks {
-                let lang = block.language.as_deref().unwrap_or("");
-                let _ = write!(content, "```{}\n{}\n```\n\n", lang, block.content);
+    let mut text_lines = Vec::new();
+
+    if let Some(step) = step {
+        // --- Description ---
+        text_lines.push(Line::from(Span::styled(
+            &step.description,
+            Style::default().fg(Color::White),
+        )));
+        text_lines.push(Line::from(""));
+
+        // --- Code Blocks ---
+        for block in &step.code_blocks {
+            let lang = block.language.as_deref().unwrap_or("text");
+            // Header
+            text_lines.push(Line::from(vec![
+                Span::raw("```"),
+                Span::styled(
+                    lang,
+                    Style::default().fg(Color::Yellow).add_modifier(Modifier::ITALIC),
+                ),
+            ]));
+
+            // Content
+            for line in block.content.lines() {
+                text_lines.push(Line::from(Span::styled(
+                    line,
+                    Style::default().fg(Color::Cyan),
+                )));
             }
 
-            if !step.output.is_empty() {
-                content.push_str("--- Output ---\n");
-                content.push_str(&step.output);
-            }
-            content
-        },
-    );
+            // Footer
+            text_lines.push(Line::from("```"));
+            text_lines.push(Line::from(""));
+        }
 
-    // Calculate estimated height
+        // --- Output ---
+        if !step.output.is_empty() {
+            text_lines.push(Line::from(Span::styled(
+                "--- Output ---",
+                Style::default().fg(Color::Magenta).add_modifier(Modifier::BOLD),
+            )));
+            
+            // Simple ANSI simulation
+            for line in step.output.lines() {
+                // TODO: Implement full ANSI parser here.
+                // For now, we do simple heuristic coloring for common log levels
+                let style = if line.contains("ERROR") || line.contains("Failed") {
+                    Style::default().fg(Color::Red)
+                } else if line.contains("WARN") {
+                    Style::default().fg(Color::Yellow)
+                } else if line.contains("SUCCESS") || line.contains("Done") {
+                    Style::default().fg(Color::Green)
+                } else {
+                    Style::default().fg(Color::Gray)
+                };
+                
+                text_lines.push(Line::from(Span::styled(line, style)));
+            }
+        }
+    } else {
+        text_lines.push(Line::from(Span::styled(
+            "No step selected.",
+            Style::default().fg(Color::DarkGray),
+        )));
+    }
+
+    // Calculate estimated height (naive wrapping approximation)
     let inner_width = area.width.saturating_sub(2); // borders
     let mut total_lines: u16 = 0;
     if inner_width > 0 {
-        for line in detail_text.lines() {
+        for line in &text_lines {
             #[allow(clippy::cast_possible_truncation)]
-            let line_len = line.chars().count() as u16;
+            let line_len = line.width() as u16; 
             if line_len == 0 {
                 total_lines += 1;
             } else {
@@ -53,7 +120,7 @@ pub fn render_details(frame: &mut Frame, area: Rect, step: Option<&Step>, scroll
         }
     }
 
-    let details = Paragraph::new(detail_text)
+    let details = Paragraph::new(text_lines)
         .block(Block::default().title(" Details ").borders(Borders::ALL))
         .wrap(Wrap { trim: true })
         .scroll((scroll, 0));

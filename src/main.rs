@@ -18,6 +18,7 @@ mod ui;
 use anyhow::Context;
 use clap::{Parser, Subcommand};
 use std::fs;
+use std::path::PathBuf;
 
 #[derive(Parser)]
 #[command(name = "compass")]
@@ -59,9 +60,13 @@ fn main() -> anyhow::Result<()> {
             }
         }
         Commands::Tui { file } => {
-            println!("Reading: {file}...");
+            let path = PathBuf::from(file);
+            let canonical_path = fs::canonicalize(&path)
+                .with_context(|| format!("Failed to resolve path: {file}"))?;
+
+            println!("Reading: {}...", canonical_path.display());
             let content =
-                fs::read_to_string(file).with_context(|| format!("Failed to read file: {file}"))?;
+                fs::read_to_string(&canonical_path).with_context(|| format!("Failed to read file: {file}"))?;
 
             let steps = core::parser::parse_readme(&content);
 
@@ -71,7 +76,7 @@ fn main() -> anyhow::Result<()> {
             }
 
             println!("Launching UI for {} steps...", steps.len());
-            ui::run_tui(steps)?;
+            ui::run_tui(steps, canonical_path)?;
         }
         Commands::Check { file } => {
             println!("Checking dependencies for: {file}...");
