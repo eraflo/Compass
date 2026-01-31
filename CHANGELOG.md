@@ -1,3 +1,19 @@
+# [1.4.0](https://github.com/eraflo/Compass/compare/v1.3.0...v1.4.0) (2026-01-31)
+
+
+### Bug Fixes
+
+* check fmt ([da4e6f1](https://github.com/eraflo/Compass/commit/da4e6f11c092bf1b4161707b131d1562d7a839ff))
+* checker comment ([678e98b](https://github.com/eraflo/Compass/commit/678e98bcd85db2d0172412dd7a51549c298658ba))
+* syntax error ([a9f31e8](https://github.com/eraflo/Compass/commit/a9f31e8f1276d05be84bf07be09b7f45837cd385))
+* use on only win and mac ([a1f133d](https://github.com/eraflo/Compass/commit/a1f133d7b1c842f2e0eddcce8a70fde58d6465be))
+
+
+### Features
+
+* added support for distant readme, with github and gitlab ([acc0361](https://github.com/eraflo/Compass/commit/acc0361a03493e2010cd7749ef8a5e5206091b04))
+* docker sandboxing ([74a052f](https://github.com/eraflo/Compass/commit/74a052f681e9cb5f8cbfe39a7630134465b4366a))
+
 # [1.3.0](https://github.com/eraflo/Compass/compare/v1.2.0...v1.3.0) (2026-01-31)
 
 
