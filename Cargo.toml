@@ -10,7 +10,7 @@ publish = false
 # Ultra-fast Markdown parser
 pulldown-cmark = "0.10"
 # Terminal interface (TUI)
-ratatui = "0.26"
+ratatui = "0.29"
 crossterm = { version = "0.27", features = ["events"] }
 # CLI arguments management
 clap = { version = "4.4", features = ["derive"] }
@@ -31,3 +31,4 @@ directories = "5.0"
 chrono = "0.4"
 # Template engine for reports
 minijinja = { version = "1.0", features = ["debug"] }
+ansi-to-tui = "7.0.0"

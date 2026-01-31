@@ -13,6 +13,7 @@
 // limitations under the License.
 
 use crate::core::models::Step;
+use ansi_to_tui::IntoText;
 use ratatui::{
     Frame,
     layout::Rect,
@@ -20,6 +21,21 @@ use ratatui::{
     text::{Line, Span},
     widgets::{Block, Borders, Paragraph, Wrap},
 };
+use std::sync::OnceLock;
+use syntect::easy::HighlightLines;
+use syntect::highlighting::ThemeSet;
+use syntect::parsing::SyntaxSet;
+
+static SYNTAX_SET: OnceLock<SyntaxSet> = OnceLock::new();
+static THEME_SET: OnceLock<ThemeSet> = OnceLock::new();
+
+fn get_syntax_set() -> &'static SyntaxSet {
+    SYNTAX_SET.get_or_init(SyntaxSet::load_defaults_newlines)
+}
+
+fn get_theme_set() -> &'static ThemeSet {
+    THEME_SET.get_or_init(ThemeSet::load_defaults)
+}
 
 /// Renders the details panel for the selected step.
 ///
@@ -61,12 +77,32 @@ pub fn render_details(frame: &mut Frame, area: Rect, step: Option<&Step>, scroll
                 ),
             ]));
 
+            // Prepare highlighter
+            let ps = get_syntax_set();
+            let ts = get_theme_set();
+            let syntax = ps
+                .find_syntax_by_token(lang)
+                .unwrap_or_else(|| ps.find_syntax_plain_text());
+            
+            // Use a dark theme that contrasts well with standard terminal backgrounds
+            let theme = &ts.themes.get("base16-ocean.dark").or_else(|| ts.themes.get("base16-mocha.dark")).unwrap_or_else(|| ts.themes.values().next().unwrap());
+            let mut h = HighlightLines::new(syntax, theme);
+
             // Content
             for line in block.content.lines() {
-                text_lines.push(Line::from(Span::styled(
-                    line,
-                    Style::default().fg(Color::Cyan),
-                )));
+                // Syntect expects standard Rust strings, but technically prefers newlines for context.
+                // However, for single-pass highlighting of lines, this works well enough for display.
+                let ranges = h.highlight_line(line, ps).unwrap_or_default();
+                
+                let spans: Vec<Span> = ranges
+                    .into_iter()
+                    .map(|(style, text)| {
+                        let fg = Color::Rgb(style.foreground.r, style.foreground.g, style.foreground.b);
+                        Span::styled(text, Style::default().fg(fg))
+                    })
+                    .collect();
+                
+                text_lines.push(Line::from(spans));
             }
 
             // Footer
@@ -81,21 +117,20 @@ pub fn render_details(frame: &mut Frame, area: Rect, step: Option<&Step>, scroll
                 Style::default().fg(Color::Magenta).add_modifier(Modifier::BOLD),
             )));
             
-            // Simple ANSI simulation
-            for line in step.output.lines() {
-                // TODO: Implement full ANSI parser here.
-                // For now, we do simple heuristic coloring for common log levels
-                let style = if line.contains("ERROR") || line.contains("Failed") {
-                    Style::default().fg(Color::Red)
-                } else if line.contains("WARN") {
-                    Style::default().fg(Color::Yellow)
-                } else if line.contains("SUCCESS") || line.contains("Done") {
-                    Style::default().fg(Color::Green)
-                } else {
-                    Style::default().fg(Color::Gray)
-                };
-                
-                text_lines.push(Line::from(Span::styled(line, style)));
+            // Render ANSI output using ansi-to-tui
+            match step.output.as_bytes().into_text() {
+                Ok(output_text) => {
+                    text_lines.extend(output_text.lines);
+                }
+                Err(_) => {
+                    // Fallback to plain text if parsing fails
+                    for line in step.output.lines() {
+                        text_lines.push(Line::from(Span::styled(
+                            line, 
+                            Style::default().fg(Color::Gray)
+                        )));
+                    }
+                }
             }
         }
     } else {

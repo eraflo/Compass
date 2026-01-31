@@ -1,29 +1,66 @@
 name: Build & Upload Assets
 
-# Trigger only when a new tag version is pushed (by semantic-release from ci.yml)
 on:
   push:
     tags:
       - 'v*'
 
+permissions:
+  contents: write
+
 jobs:
-  build-and-upload:
-    name: Build and Upload Binary
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write # Needed to upload assets to the release
-    
+  build:
+    name: Build ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+            output_name: compass
+            asset_name: compass-linux-x86_64.tar.gz
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+            output_name: compass.exe
+            asset_name: compass-windows-x86_64.zip
+          - target: aarch64-pc-windows-msvc
+            os: windows-latest
+            output_name: compass.exe
+            asset_name: compass-windows-arm64.zip
+          - target: x86_64-apple-darwin
+            os: macos-latest
+            output_name: compass
+            asset_name: compass-macos-x86_64.tar.gz
+          - target: aarch64-apple-darwin
+            os: macos-latest
+            output_name: compass
+            asset_name: compass-macos-arm64.tar.gz
+
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
 
       - name: Build Release
-        run: cargo build --release
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Package (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          Compress-Archive -Path target/${{ matrix.target }}/release/${{ matrix.output_name }} -DestinationPath ${{ matrix.asset_name }}
+
+      - name: Package (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          cd target/${{ matrix.target }}/release
+          tar -czf ../../../${{ matrix.asset_name }} ${{ matrix.output_name }}
 
       - name: Upload Binary to Release
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          files: target/release/compass
+          files: ${{ matrix.asset_name }}

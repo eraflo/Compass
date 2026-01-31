@@ -80,7 +80,28 @@ fn main() -> anyhow::Result<()> {
         }
         Commands::Check { file } => {
             println!("Checking dependencies for: {file}...");
-            // TODO: Call executor::check_deps
+            let content =
+                fs::read_to_string(file).with_context(|| format!("Failed to read file: {file}"))?;
+
+            let steps = core::parser::parse_readme(&content);
+            let result = core::executor::check_dependencies(&steps);
+
+            if !result.present.is_empty() {
+                println!("\n✅ Present:");
+                for cmd in &result.present {
+                    println!("   - {cmd}");
+                }
+            }
+
+            if result.missing.is_empty() {
+                println!("\nAll detected dependencies seem to be present!");
+            } else {
+                println!("\n❌ Missing:");
+                for cmd in &result.missing {
+                    println!("   - {cmd}");
+                }
+                println!("\nSome dependencies are missing. Please install them before proceeding.");
+            }
         }
     }
 

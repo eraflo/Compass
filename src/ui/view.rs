@@ -84,7 +84,7 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
     let main_chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([Constraint::Min(0), Constraint::Length(1)])
-        .split(frame.size());
+        .split(frame.area());
 
     let content_area = main_chunks[0];
     let status_area = main_chunks[1];
@@ -120,20 +120,20 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
                 .required_placeholders
                 .get(app.modal.current_placeholder_idx)
             {
-                popups::render_input_modal(frame, frame.size(), var_name, &app.modal.input_buffer);
+                popups::input::render(frame, frame.area(), var_name, &app.modal.input_buffer);
             }
         }
         Mode::SafetyAlert => {
             if let Some(ref pattern) = app.safety_pattern {
-                popups::render_safety_alert(frame, frame.size(), pattern);
+                popups::safety::render(frame, frame.area(), pattern);
             }
         }
         Mode::HelpModal => {
-            popups::render_help_modal(frame, frame.size(), app.help_scroll);
+            popups::help::render(frame, frame.area(), app.help_scroll);
         }
         Mode::ExportNotification => {
             if let Some((success, ref message)) = app.export_message {
-                popups::render_export_notification(frame, frame.size(), success, message);
+                popups::notification::render(frame, frame.area(), success, message);
             }
         }
         Mode::Normal => {}

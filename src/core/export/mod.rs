@@ -18,28 +18,22 @@
 //! into various formats (JSON and Markdown). This is essential for debugging,
 //! sharing session results, and onboarding support.
 //!
-//! ## Use Cases
+//! ## Extensibility
 //!
-//! - A new employee stuck at a step can export and share the report
-//! - Session logs can be archived for documentation
-//! - Troubleshooting can be done by examining the full execution history
+//! New export formats can be added by creating a new module in `formats/`
+//! and calling it from the `Exporter` struct.
 
+pub mod formats;
 pub mod models;
 
 use crate::core::models::{Step, StepStatus};
 use models::{
     EnvironmentInfo, ExportReport, ExportedCodeBlock, ExportedStep, ReportMetadata, ReportSummary,
 };
-use anyhow::{Context, Result};
+use anyhow::Result;
 use chrono::{Local, Utc};
-use minijinja::Environment;
 use std::collections::HashMap;
-use std::fs;
 use std::path::{Path, PathBuf};
-
-/// The Markdown template used for report generation.
-/// Using a template engine allows for easier maintenance and formatting changes.
-const MARKDOWN_TEMPLATE: &str = include_str!("../../../templates/report.md");
 
 /// Exports session data to various formats.
 pub struct Exporter;
@@ -148,30 +142,8 @@ impl Exporter {
     /// # Errors
     ///
     /// Returns an error if the file cannot be written or JSON serialization fails.
-    ///
-    /// # Examples
-    ///
-    /// ```rust,ignore
-    /// let report = Exporter::generate_report(&steps, readme_path, ...);
-    /// Exporter::export_json(&report, Path::new("compass-report.json"))?;
-    /// ```
     pub fn export_json(report: &ExportReport, output_path: &Path) -> Result<PathBuf> {
-        let content = serde_json::to_string_pretty(report)
-            .context("Failed to serialize report to JSON")?;
-
-        // Ensure parent directory exists
-        #[allow(clippy::collapsible_if)]
-        if let Some(parent) = output_path.parent() {
-            if !parent.exists() {
-                fs::create_dir_all(parent)
-                    .with_context(|| format!("Failed to create directory: {}", parent.display()))?;
-            }
-        }
-
-        fs::write(output_path, content)
-            .with_context(|| format!("Failed to write JSON report to: {}", output_path.display()))?;
-
-        Ok(output_path.to_path_buf())
+        formats::json::export(report, output_path)
     }
 
     /// Exports the report to a Markdown file.
@@ -188,29 +160,7 @@ impl Exporter {
     ///
     /// Returns an error if the file cannot be written.
     pub fn export_markdown(report: &ExportReport, output_path: &Path) -> Result<PathBuf> {
-        let mut env = Environment::new();
-        env.add_template("report.md", MARKDOWN_TEMPLATE)
-            .context("Failed to load markdown template")?;
-
-        let template = env.get_template("report.md")
-            .context("Failed to get markdown template")?;
-
-        let rendered = template.render(report)
-            .context("Failed to render markdown report")?;
-
-        // Ensure parent directory exists
-        #[allow(clippy::collapsible_if)]
-        if let Some(parent) = output_path.parent() {
-             if !parent.exists() {
-                fs::create_dir_all(parent)
-                    .with_context(|| format!("Failed to create directory: {}", parent.display()))?;
-            }
-        }
-
-        fs::write(output_path, rendered)
-            .with_context(|| format!("Failed to write Markdown report to: {}", output_path.display()))?;
-
-        Ok(output_path.to_path_buf())
+        formats::markdown::export(report, output_path)
     }
 
     /// Generates default output paths for the export files.
@@ -260,6 +210,7 @@ impl Exporter {
 mod tests {
     use super::*;
     use crate::core::models::CodeBlock;
+    use std::fs;
 
     fn create_test_steps() -> Vec<Step> {
         vec![
