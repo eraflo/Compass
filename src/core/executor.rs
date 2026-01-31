@@ -27,6 +27,7 @@ pub struct ExecutionContext {
 }
 
 impl ExecutionContext {
+    #[must_use]
     pub fn new() -> Self {
         let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
         Self {
@@ -41,13 +42,13 @@ pub struct BuiltinHandler;
 
 impl BuiltinHandler {
     /// Scans the content for built-in patterns and updates the context.
-    pub fn pre_process(content: &str, context: &mut ExecutionContext) {
-        for line in content.lines() {
+    pub fn pre_process(cmd_content: &str, context: &mut ExecutionContext) {
+        for line in cmd_content.lines() {
             let trimmed = line.trim();
 
             // Detect 'cd'
-            if trimmed.starts_with("cd ") {
-                let path_str = trimmed[3..].trim().trim_matches(|c| c == '\"' || c == '\'');
+            if let Some(rest) = trimmed.strip_prefix("cd ") {
+                let path_str = rest.trim().trim_matches(|c| c == '\"' || c == '\'');
                 let new_path = context.current_dir.join(path_str);
                 if new_path.exists() && new_path.is_dir() {
                     context.current_dir = new_path.canonicalize().unwrap_or(new_path);
@@ -55,8 +56,8 @@ impl BuiltinHandler {
             }
 
             // Detect 'export'
-            if trimmed.starts_with("export ") {
-                let assignment = trimmed[7..].trim();
+            if let Some(rest) = trimmed.strip_prefix("export ") {
+                let assignment = rest.trim();
                 if let Some((key, val)) = assignment.split_once('=') {
                     let val = val.trim_matches(|c| c == '\"' || c == '\'');
                     context
@@ -74,12 +75,13 @@ pub struct ShellSession {
 }
 
 impl ShellSession {
-    pub fn new(context: ExecutionContext) -> Self {
+    #[must_use]
+    pub const fn new(context: ExecutionContext) -> Self {
         Self { context }
     }
 
     /// Executing via PTY and streaming output to a sender.
-    pub fn run(&self, content: &str, tx: Sender<String>) -> StepStatus {
+    pub fn run(&self, cmd_content: &str, tx: &Sender<String>) -> StepStatus {
         let pty_system = native_pty_system();
         let pty_pair = match pty_system.openpty(PtySize {
             rows: 24,
@@ -89,7 +91,7 @@ impl ShellSession {
         }) {
             Ok(pair) => pair,
             Err(e) => {
-                let _ = tx.send(format!("Error opening PTY: {}\n", e));
+                let _ = tx.send(format!("Error opening PTY: {e}\n"));
                 return StepStatus::Failed;
             }
         };
@@ -98,12 +100,12 @@ impl ShellSession {
         let mut cmd = if cfg!(target_os = "windows") {
             let mut c = CommandBuilder::new("powershell");
             c.arg("-Command");
-            c.arg(content);
+            c.arg(cmd_content);
             c
         } else {
             let mut c = CommandBuilder::new("sh");
             c.arg("-c");
-            c.arg(content);
+            c.arg(cmd_content);
             c
         };
 
@@ -116,7 +118,7 @@ impl ShellSession {
         let mut child = match pty_pair.slave.spawn_command(cmd) {
             Ok(child) => child,
             Err(e) => {
-                let _ = tx.send(format!("Error spawning process: {}\n", e));
+                let _ = tx.send(format!("Error spawning process: {e}\n"));
                 return StepStatus::Failed;
             }
         };
@@ -128,7 +130,7 @@ impl ShellSession {
         let mut reader = match pty_pair.master.try_clone_reader() {
             Ok(r) => r,
             Err(e) => {
-                let _ = tx.send(format!("Error getting reader: {}\n", e));
+                let _ = tx.send(format!("Error getting reader: {e}\n"));
                 return StepStatus::Failed;
             }
         };
@@ -143,22 +145,19 @@ impl ShellSession {
                         break;
                     }
                 }
-                Err(ref e) if e.kind() == std::io::ErrorKind::Interrupted => continue,
+                Err(ref e) if e.kind() == std::io::ErrorKind::Interrupted => {}
                 Err(_) => break,
             }
         }
 
         // Wait for exit
-        match child.wait() {
-            Ok(status) => {
-                if status.success() {
-                    StepStatus::Success
-                } else {
-                    StepStatus::Failed
-                }
+        child.wait().map_or(StepStatus::Failed, |status| {
+            if status.success() {
+                StepStatus::Success
+            } else {
+                StepStatus::Failed
             }
-            Err(_) => StepStatus::Failed,
-        }
+        })
     }
 }
 
@@ -168,6 +167,7 @@ pub struct Executor {
 }
 
 impl Executor {
+    #[must_use]
     pub fn new() -> Self {
         Self {
             context: ExecutionContext::new(),
@@ -175,13 +175,13 @@ impl Executor {
     }
 
     /// Orchestrates the execution of a code block.
-    pub fn execute_streamed(&mut self, content: &str, tx: Sender<String>) -> StepStatus {
+    pub fn execute_streamed(&mut self, cmd_content: &str, tx: &Sender<String>) -> StepStatus {
         // 1. Handle side-effects (builtins)
-        BuiltinHandler::pre_process(content, &mut self.context);
+        BuiltinHandler::pre_process(cmd_content, &mut self.context);
 
         // 2. Run via ShellSession
         let session = ShellSession::new(self.context.clone());
-        session.run(content, tx)
+        session.run(cmd_content, tx)
     }
 }
 

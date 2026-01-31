@@ -22,6 +22,7 @@ use ratatui::{
 };
 use regex::Regex;
 use std::collections::HashMap;
+use std::fmt::Write;
 use std::path::PathBuf;
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::thread;
@@ -119,9 +120,9 @@ impl App {
                     StepStatus::Running => Style::default().fg(Color::Yellow),
                     StepStatus::Success => Style::default().fg(Color::Green),
                     StepStatus::Failed => Style::default().fg(Color::Red),
-                    _ => Style::default().fg(Color::White),
+                    StepStatus::Pending => Style::default().fg(Color::White),
                 };
-                ListItem::new(format!("{}{}", symbol, step.title)).style(style)
+                ListItem::new(format!("{symbol}{title}", title = step.title)).style(style)
             })
             .collect();
 
@@ -139,24 +140,22 @@ impl App {
 
         // Main panel: Step details
         let selected_index = self.list_state.selected().unwrap_or(0);
-        let detail_text = if let Some(step) = self.steps.get(selected_index) {
-            let mut content = format!("{}\n\n", step.description);
-            for block in &step.code_blocks {
-                content.push_str(&format!(
-                    "```{}\n{}\n```\n\n",
-                    block.language.as_deref().unwrap_or(""),
-                    block.content
-                ));
-            }
+        let detail_text = self.steps.get(selected_index).map_or_else(
+            || "No step selected.".to_string(),
+            |step| {
+                let mut content = format!("{}\n\n", step.description);
+                for block in &step.code_blocks {
+                    let lang = block.language.as_deref().unwrap_or("");
+                    let _ = write!(content, "```{}\n{}\n```\n\n", lang, block.content);
+                }
 
-            if !step.output.is_empty() {
-                content.push_str("--- Output ---\n");
-                content.push_str(&step.output);
-            }
-            content
-        } else {
-            "No step selected.".to_string()
-        };
+                if !step.output.is_empty() {
+                    content.push_str("--- Output ---\n");
+                    content.push_str(&step.output);
+                }
+                content
+            },
+        );
 
         // Render the details
         let details = Paragraph::new(detail_text)
@@ -168,62 +167,62 @@ impl App {
 
     /// Executes the currently selected step (Non-blocking).
     pub fn execute_selected(&mut self) {
-        if let Some(i) = self.list_state.selected() {
-            if let Some(step) = self.steps.get(i) {
-                if step.status == StepStatus::Running {
-                    return; // Already running
-                }
-
-                let content = step
-                    .code_blocks
-                    .iter()
-                    .map(|b| b.content.as_str())
-                    .collect::<Vec<_>>()
-                    .join("\n");
-
-                if content.is_empty() {
-                    return;
-                }
-
-                let tx = self.tx.clone();
-                let current_dir = self.executor.context.current_dir.clone();
-                let env_vars = self.executor.context.env_vars.clone();
-                let index = i;
-
-                // Mark as running immediately for UI feedback
-                self.steps[i].status = StepStatus::Running;
-                self.steps[i].output.clear();
-
-                thread::spawn(move || {
-                    let mut local_executor = Executor {
-                        context: ExecutionContext {
-                            current_dir,
-                            env_vars,
-                        },
-                    };
-                    let (stream_tx, stream_rx) = mpsc::channel::<String>();
-
-                    let tx_for_streaming = tx.clone();
-                    let thread_index = index;
-
-                    // Spawn a sub-thread to forward streaming output to the main app
-                    thread::spawn(move || {
-                        while let Ok(partial) = stream_rx.recv() {
-                            let _ = tx_for_streaming
-                                .send(ExecutionMessage::OutputPartial(thread_index, partial));
-                        }
-                    });
-
-                    let status = local_executor.execute_streamed(&content, stream_tx);
-
-                    let _ = tx.send(ExecutionMessage::Finished(
-                        index,
-                        status,
-                        local_executor.context.current_dir,
-                        local_executor.context.env_vars,
-                    ));
-                });
+        if let Some(i) = self.list_state.selected()
+            && let Some(step) = self.steps.get(i)
+        {
+            if step.status == StepStatus::Running {
+                return; // Already running
             }
+
+            let content = step
+                .code_blocks
+                .iter()
+                .map(|b| b.content.as_str())
+                .collect::<Vec<_>>()
+                .join("\n");
+
+            if content.is_empty() {
+                return;
+            }
+
+            let tx = self.tx.clone();
+            let current_dir = self.executor.context.current_dir.clone();
+            let env_vars = self.executor.context.env_vars.clone();
+            let index = i;
+
+            // Mark as running immediately for UI feedback
+            self.steps[i].status = StepStatus::Running;
+            self.steps[i].output.clear();
+
+            thread::spawn(move || {
+                let mut local_executor = Executor {
+                    context: ExecutionContext {
+                        current_dir,
+                        env_vars,
+                    },
+                };
+                let (stream_tx, stream_rx) = mpsc::channel::<String>();
+
+                let tx_for_streaming = tx.clone();
+                let thread_index = index;
+
+                // Spawn a sub-thread to forward streaming output to the main app
+                thread::spawn(move || {
+                    while let Ok(partial) = stream_rx.recv() {
+                        let _ = tx_for_streaming
+                            .send(ExecutionMessage::OutputPartial(thread_index, partial));
+                    }
+                });
+
+                let status = local_executor.execute_streamed(&content, &stream_tx);
+
+                let _ = tx.send(ExecutionMessage::Finished(
+                    index,
+                    status,
+                    local_executor.context.current_dir,
+                    local_executor.context.env_vars,
+                ));
+            });
         }
     }
 
@@ -272,9 +271,6 @@ impl App {
 
     /// Robust ANSI sequence cleaning.
     fn clean_ansi(s: &str) -> String {
-        // Corrected regex for ANSI escape sequences:
-        // - Escaped [ after the first group: \[
-        // - Simplified to be safer and correct
         let re = Regex::new(r"[\x1b\x9b]\[[()#;?]*([0-9A-Za-z;?]*[A-PR-Zcf-ntqry=><~])").unwrap();
         re.replace_all(s, "").to_string()
     }

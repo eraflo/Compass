@@ -42,9 +42,9 @@ fn main() -> anyhow::Result<()> {
 
     match &cli.command {
         Commands::Parse { file } => {
-            println!("Reading: {}...", file);
-            let content = fs::read_to_string(file)
-                .with_context(|| format!("Failed to read file: {}", file))?;
+            println!("Reading: {file}...");
+            let content =
+                fs::read_to_string(file).with_context(|| format!("Failed to read file: {file}"))?;
 
             let steps = core::parser::parse_readme(&content);
 
@@ -59,9 +59,9 @@ fn main() -> anyhow::Result<()> {
             }
         }
         Commands::Tui { file } => {
-            println!("Reading: {}...", file);
-            let content = fs::read_to_string(file)
-                .with_context(|| format!("Failed to read file: {}", file))?;
+            println!("Reading: {file}...");
+            let content =
+                fs::read_to_string(file).with_context(|| format!("Failed to read file: {file}"))?;
 
             let steps = core::parser::parse_readme(&content);
 
@@ -74,7 +74,7 @@ fn main() -> anyhow::Result<()> {
             ui::run_tui(steps)?;
         }
         Commands::Check { file } => {
-            println!("Checking dependencies for: {}...", file);
+            println!("Checking dependencies for: {file}...");
             // TODO: Call executor::check_deps
         }
     }

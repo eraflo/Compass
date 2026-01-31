@@ -17,7 +17,7 @@ Runs everything (fmt, clippy, tests).
 
 ### Individual Steps
 - **Format**: `cargo fmt --all`
-- **Lint**: `cargo clippy -- -D warnings`
+- **Lint**: `cargo clippy --all-targets --all-features -- -D warnings -D clippy::pedantic -D clippy::nursery`
 - **Test**: `cargo test`
 
 ## Guideline
