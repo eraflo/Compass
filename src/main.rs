@@ -26,6 +26,14 @@ use std::path::PathBuf;
 struct Cli {
     #[command(subcommand)]
     command: Commands,
+
+    /// Enable sandbox mode using Docker
+    #[arg(short, long, global = true)]
+    sandbox: bool,
+
+    /// Docker image to use in sandbox mode
+    #[arg(long, global = true, default_value = "ubuntu:latest")]
+    image: String,
 }
 
 #[derive(Subcommand)]
@@ -76,6 +84,15 @@ fn main() -> anyhow::Result<()> {
             }
         }
         Commands::Tui { file } => {
+            if cli.sandbox {
+                // Use the core docker module to check availability
+                if let Err(e) = core::docker::ensure_docker_available() {
+                    eprintln!("Error: {}", e);
+                    std::process::exit(1);
+                }
+                println!("📦 Sandbox mode enabled (Image: {})", cli.image);
+            }
+
             let (content, path, is_remote) = load_readme(file)?;
             let steps = core::parser::parse_readme(&content);
 
@@ -85,7 +102,7 @@ fn main() -> anyhow::Result<()> {
             }
 
             println!("Launching UI for {} steps...", steps.len());
-            ui::run_tui(steps, path, is_remote)?;
+            ui::run_tui(steps, path, is_remote, cli.sandbox, cli.image)?;
         }
         Commands::Check { file } => {
             let (content, _, _) = load_readme(file)?;

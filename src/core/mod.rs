@@ -23,6 +23,7 @@
 //! - `parser` - Markdown README parser
 
 pub mod config;
+pub mod docker;
 pub mod executor;
 pub mod export;
 pub mod fetcher;

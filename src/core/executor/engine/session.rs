@@ -65,20 +65,83 @@ impl ShellSession {
         };
 
         let run_cmd = handler.get_run_command(&prepared_path);
-        let mut cmd = CommandBuilder::new(&run_cmd[0]);
-        for arg in &run_cmd[1..] {
-            cmd.arg(arg);
-        }
+        let run_cmd_parts = run_cmd; // Alias for clarity
 
-        cmd.cwd(&self.context.current_dir);
-        for (key, val) in &self.context.env_vars {
-            cmd.env(key, val);
-        }
+        // --- Docker Sandbox Logic ---
+        let cmd = if self.context.sandbox_enabled {
+            let mut docker_cmd = CommandBuilder::new("docker");
+            docker_cmd.args(["run", "--rm", "-it"]);
 
-        // Apply environment variables from the language strategy
-        for (key, val) in handler.get_env_vars() {
-            cmd.env(key, val);
-        }
+            // 1. Mount Current Working Directory
+            // We mount the project root to /workspace so relative paths work as expected.
+            let cwd_str = self.context.current_dir.to_string_lossy();
+            docker_cmd.arg("-v");
+            docker_cmd.arg(format!("{cwd_str}:/workspace"));
+            docker_cmd.args(["-w", "/workspace"]);
+
+            // 2. Mount Temporary Script Directory
+            // Language strategies write scripts to the host's temp directory.
+            // We map this directory to a fixed path in the container (/compass/temp)
+            // so the container can access the generated script file.
+            let container_temp_base = "/compass/temp";
+            let container_script_path = if let Some(file_name) = prepared_path.file_name() {
+                format!("{container_temp_base}/{}", file_name.to_string_lossy())
+            } else {
+                format!("{container_temp_base}/script")
+            };
+
+            if let Some(parent) = prepared_path.parent() {
+                let host_temp_dir = parent.to_string_lossy();
+                docker_cmd.arg("-v");
+                docker_cmd.arg(format!("{host_temp_dir}:{container_temp_base}"));
+            }
+
+            // 3. Inject Environment Variables
+            // We pass both the context env vars (global) and language-specific ones (e.g., CI=true).
+            for (key, val) in self
+                .context
+                .env_vars
+                .iter()
+                .chain(handler.get_env_vars().iter())
+            {
+                docker_cmd.arg("-e");
+                docker_cmd.arg(format!("{key}={val}"));
+            }
+
+            // 4. Set Docker Image
+            docker_cmd.arg(&self.context.docker_image);
+
+            // 5. Construct Inner Command
+            // We take the original run command (calculated for the host) and rewrite
+            // the file paths to point to their new location inside the container.
+            // This allows "node C:\Temp\script.js" to become "node /compass/temp/script.js".
+            let host_path_str = prepared_path.to_string_lossy();
+            let modified_cmd_parts: Vec<String> = run_cmd_parts
+                .iter()
+                .map(|part| part.replace(host_path_str.as_ref(), &container_script_path))
+                .collect();
+
+            // Execute via sh -c to allow shell features if needed (and simple arg joining)
+            docker_cmd.args(["sh", "-c", &modified_cmd_parts.join(" ")]);
+
+            docker_cmd
+        } else {
+            // --- Standard Host Execution ---
+            let mut cmd = CommandBuilder::new(&run_cmd_parts[0]);
+            for arg in &run_cmd_parts[1..] {
+                cmd.arg(arg);
+            }
+            cmd.cwd(&self.context.current_dir);
+            for (key, val) in self
+                .context
+                .env_vars
+                .iter()
+                .chain(handler.get_env_vars().iter())
+            {
+                cmd.env(key, val);
+            }
+            cmd
+        };
 
         // Spawn child
         let mut child = match pty_pair.slave.spawn_command(cmd) {

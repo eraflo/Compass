@@ -20,6 +20,8 @@ use std::path::PathBuf;
 pub struct ExecutionContext {
     pub current_dir: PathBuf,
     pub env_vars: HashMap<String, String>,
+    pub sandbox_enabled: bool,
+    pub docker_image: String,
 }
 
 impl ExecutionContext {
@@ -30,6 +32,8 @@ impl ExecutionContext {
         Self {
             current_dir,
             env_vars: HashMap::new(),
+            sandbox_enabled: false,
+            docker_image: "ubuntu:latest".to_string(),
         }
     }
 }

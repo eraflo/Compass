@@ -20,6 +20,5 @@ pub mod manager;
 pub mod session;
 
 pub use builder::CommandBuilder;
-pub use context::ExecutionContext;
 pub use core::Executor;
 pub use manager::ExecutionManager;
