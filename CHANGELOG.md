@@ -1,3 +1,16 @@
+# [1.1.0](https://github.com/eraflo/Compass/compare/v1.0.0...v1.1.0) (2026-01-31)
+
+
+### Bug Fixes
+
+* better skill and clippy error ([8085873](https://github.com/eraflo/Compass/commit/8085873353e59831aa2718d284090c3dbf7b823e))
+* better terminal UI and input too fast ([5bbbb64](https://github.com/eraflo/Compass/commit/5bbbb64dca416a48b51d234225a8697f33130a7b))
+
+
+### Features
+
+* basic code executor (support sh and powershell) ([bcb8f6b](https://github.com/eraflo/Compass/commit/bcb8f6ba4e0bdbab359e5a83cda66aa1704d2f05))
+
 # 1.0.0 (2026-01-31)
 
 
