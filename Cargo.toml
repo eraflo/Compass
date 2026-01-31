@@ -4,6 +4,7 @@ version = "1.0.0"
 edition = "2024"
 authors = ["eraflo"]
 description = "Interactive README runner and onboarding guide"
+publish = false
 
 [dependencies]
 # Ultra-fast Markdown parser

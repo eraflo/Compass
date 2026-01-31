@@ -9,9 +9,8 @@
         [
             "@semantic-release-cargo/semantic-release-cargo",
             {
-                "check": false,
                 "publish": false,
-                "alwaysVerifyToken": false
+                "check": false
             }
         ],
         [
