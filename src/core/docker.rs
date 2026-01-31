@@ -12,7 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use anyhow::{Context, Result, bail};
+#[cfg(any(target_os = "windows", target_os = "macos"))]
+use anyhow::Context;
+use anyhow::{Result, bail};
 use std::process::Command;
 
 /// Checks if Docker is available and running.
