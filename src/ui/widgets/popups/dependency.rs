@@ -14,10 +14,10 @@
 
 use crate::ui::utils::centered_rect;
 use ratatui::{
+    Frame,
     layout::{Alignment, Rect},
     style::{Color, Modifier, Style},
     widgets::{Block, Borders, Clear, Paragraph, Wrap},
-    Frame,
 };
 
 pub fn render(frame: &mut Frame, area: Rect, message: &str) {
@@ -27,7 +27,11 @@ pub fn render(frame: &mut Frame, area: Rect, message: &str) {
     let block = Block::default()
         .title(" 🛠️ MISSING DEPENDENCY ")
         .borders(Borders::ALL)
-        .border_style(Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD));
+        .border_style(
+            Style::default()
+                .fg(Color::Yellow)
+                .add_modifier(Modifier::BOLD),
+        );
 
     let text = format!(
         "\n{message}\n\nThe command may fail if the tool is not installed.\n\nPress [Enter] to try anyway, or [Esc] to cancel."

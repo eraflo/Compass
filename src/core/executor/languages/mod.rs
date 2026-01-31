@@ -20,7 +20,13 @@ use definition::LanguageDefinition;
 pub fn get_language_handler(lang_id: Option<&str>) -> Box<dyn LanguageDefinition> {
     match lang_id {
         Some("python" | "py") => Box::new(strategies::python::PythonHandler),
-        // Add more languages here
+        Some("javascript" | "js" | "node") => Box::new(strategies::javascript::JsHandler),
+        Some("csharp" | "cs" | "c#") => Box::new(strategies::csharp::CSharpHandler),
+        Some("typescript" | "ts") => Box::new(strategies::typescript::TsHandler),
+        Some("go" | "golang") => Box::new(strategies::go::GoHandler),
+        Some("rust" | "rs") => Box::new(strategies::rust::RustHandler),
+        Some("php") => Box::new(strategies::php::PhpHandler),
+        Some("ruby" | "rb") => Box::new(strategies::ruby::RubyHandler),
         _ => Box::new(strategies::shell::ShellHandler),
     }
 }

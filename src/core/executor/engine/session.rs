@@ -75,6 +75,11 @@ impl ShellSession {
             cmd.env(key, val);
         }
 
+        // Apply environment variables from the language strategy
+        for (key, val) in handler.get_env_vars() {
+            cmd.env(key, val);
+        }
+
         // Spawn child
         let mut child = match pty_pair.slave.spawn_command(cmd) {
             Ok(child) => child,

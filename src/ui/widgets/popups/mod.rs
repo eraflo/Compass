@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+pub mod dependency;
 pub mod help;
 pub mod input;
 pub mod notification;
 pub mod safety;
-pub mod dependency;

@@ -13,6 +13,7 @@
 // limitations under the License.
 
 use anyhow::Result;
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
 /// Defines the behavior for handling a specific programming language.
@@ -41,6 +42,11 @@ pub trait LanguageDefinition {
     ///
     /// * `prepared_path` - The path returned by `prepare`.
     fn get_run_command(&self, prepared_path: &Path) -> Vec<String>;
+
+    /// Returns a map of environment variables to set for the execution.
+    fn get_env_vars(&self) -> HashMap<String, String> {
+        HashMap::new()
+    }
 
     /// Returns a list of dangerous patterns (strings) that should trigger a safety alert.
     /// Examples: "rm -rf", "os.system", etc.
