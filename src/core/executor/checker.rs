@@ -45,18 +45,11 @@ pub fn check_dependencies(steps: &[Step]) -> CheckResult {
                  if let Some(lang) = &block.language {
                     let handler = get_language_handler(Some(lang));
                     let cmd = handler.get_required_command();
-                    // We avoid adding basic shells (sh, powershell) for unknown languages
-                    // to keep the output clean, unless it's a specific known language.
-                    // But effectively, if we have "go", we get "go".
-                    // If we have "unknown", we get "sh"/"powershell".
-                    
-                    // Simple filter: if the returned command is "sh" or "powershell", 
-                    // and the input lang was NOT one of them (which we know it isn't due to !is_shell),
-                    // then it's a fallback. We might want to skip it to avoid noise?
-                    // But for "go", "ruby" etc, it will be distinct.
-                    
+                    // Filter out fallback shells (sh, powershell, cmd) returned by the default handler
+                    // when the language is not explicitly supported. We only want to report
+                    // missing dependencies for specific required tools (e.g. "go", "python", "cargo").
                     if cmd != "sh" && cmd != "powershell" && cmd != "cmd" {
-                         candidates.insert(cmd.to_string());
+                        candidates.insert(cmd.to_string());
                     }
                 }
                 continue;
