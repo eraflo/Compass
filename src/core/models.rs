@@ -20,6 +20,18 @@ pub enum StepStatus {
     Running,
     Success,
     Failed,
+    Skipped,
+}
+
+/// A condition that must be met for a step to be applicable.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Condition {
+    /// The step applies only to a specific OS (linux, macos, windows).
+    Os(String),
+    /// The step applies only if a specific environment variable exists.
+    EnvVarExists(String),
+    /// The step applies only if a specific file exists.
+    FileExists(String),
 }
 
 /// A block of code extracted from a Markdown file.
@@ -46,6 +58,8 @@ pub struct Step {
     pub status: StepStatus,
     /// The captured output (stdout and stderr) from the last execution.
     pub output: String,
+    /// An optional condition for this step (e.g., OS-specific).
+    pub condition: Option<Condition>,
 }
 
 impl Step {

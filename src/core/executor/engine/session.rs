@@ -54,7 +54,13 @@ impl ShellSession {
 
         // Prepare using Strategy
         let handler = get_language_handler(language);
-        let temp_dir = std::env::temp_dir();
+
+        // Use a local temp directory to ensure compatibility with shells (WSL, Bash)
+        // that might have trouble with cross-drive paths or absolute Windows paths.
+        let temp_dir = self.context.current_dir.join(".compass_temp");
+        if !temp_dir.exists() {
+            let _ = std::fs::create_dir_all(&temp_dir);
+        }
 
         let prepared_path = match handler.prepare(cmd_content, &temp_dir) {
             Ok(path) => path,
@@ -64,7 +70,11 @@ impl ShellSession {
             }
         };
 
-        let run_cmd = handler.get_run_command(&prepared_path);
+        // Try to create a relative path for execution
+        let run_path = pathdiff::diff_paths(&prepared_path, &self.context.current_dir)
+            .unwrap_or_else(|| prepared_path.clone());
+
+        let run_cmd = handler.get_run_command(&run_path);
         let run_cmd_parts = run_cmd; // Alias for clarity
 
         // --- Docker Sandbox Logic ---

@@ -12,8 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::core::models::{CodeBlock, Step};
+use crate::core::models::{CodeBlock, Condition, Step};
 use pulldown_cmark::{Event, Parser, Tag};
+use regex::Regex;
 
 /// Parses a Markdown string into a sequence of steps.
 pub fn parse_readme(content: &str) -> Vec<Step> {
@@ -23,15 +24,38 @@ pub fn parse_readme(content: &str) -> Vec<Step> {
     let mut in_heading = false;
     let mut in_code_block = false;
     let mut current_code_lang = None;
+    let mut active_condition: Option<Condition> = None;
+
+    let re_if = Regex::new(r#"<!--\s*compass:if\s+(\w+)="([^"]+)"\s*-->"#).unwrap();
+    let re_endif = Regex::new(r#"<!--\s*compass:endif\s*-->"#).unwrap();
 
     for event in parser {
         match event {
+            Event::Html(cow_str) => {
+                let text = cow_str.trim();
+                if let Some(caps) = re_if.captures(text) {
+                    let key = caps.get(1).map_or("", |m| m.as_str());
+                    let val = caps.get(2).map_or("", |m| m.as_str());
+
+                    active_condition = match key {
+                        "os" => Some(Condition::Os(val.to_string())),
+                        "env_var_exists" => Some(Condition::EnvVarExists(val.to_string())),
+                        "file_exists" => Some(Condition::FileExists(val.to_string())),
+                        _ => None, // Unknown condition type
+                    };
+                } else if re_endif.is_match(text) {
+                    active_condition = None;
+                }
+            }
             Event::Start(Tag::Heading { .. }) => {
                 // If we were already in a step, push it to the list
                 if let Some(step) = current_step.take() {
                     steps.push(step);
                 }
-                current_step = Some(Step::default());
+                current_step = Some(Step {
+                    condition: active_condition.clone(),
+                    ..Default::default()
+                });
                 in_heading = true;
             }
             Event::End(pulldown_cmark::TagEnd::Heading(_)) => {

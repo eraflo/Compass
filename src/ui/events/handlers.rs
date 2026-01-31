@@ -71,8 +71,16 @@ pub fn update(app: &mut App) {
                 }
             }
             ExecutionMessage::Finished(i, status, new_dir, new_env) => {
+                let mut recommendation = None;
+
                 let scroll_target = if let Some(step) = app.steps.get_mut(i) {
                     step.status = status;
+
+                    if status == StepStatus::Failed {
+                        recommendation =
+                            crate::core::analysis::recovery::analyze_error(&step.output);
+                    }
+
                     let finish_status = match status {
                         StepStatus::Success => "✅ Execution finished successfully.",
                         StepStatus::Failed => "❌ Execution failed.",
@@ -94,6 +102,11 @@ pub fn update(app: &mut App) {
                 } else {
                     0
                 };
+
+                if let Some(rec) = recommendation {
+                    app.recovery_suggestion = Some(rec);
+                    app.mode = crate::ui::state::Mode::RecoveryAlert;
+                }
 
                 app.details_scroll = scroll_target;
                 app.execution_manager.executor.context.current_dir = new_dir;
@@ -129,6 +142,29 @@ pub fn perform_execution(app: &mut App, bypass_safety: bool) {
             if step.status == StepStatus::Running {
                 return;
             }
+        }
+
+        // Check conditions
+        let should_skip = if let Some(step) = app.steps.get(i) {
+            if let Some(condition) = &step.condition {
+                use crate::core::executor::conditions::evaluator::{
+                    ConditionEvaluator, StandardEvaluator,
+                };
+                let evaluator = StandardEvaluator::new();
+                !evaluator.evaluate(condition)
+            } else {
+                false
+            }
+        } else {
+            false
+        };
+
+        if should_skip {
+            if let Some(step) = app.steps.get_mut(i) {
+                step.status = StepStatus::Skipped;
+                step.output.push_str("\n> ⏭️ Skipped: Condition not met.\n");
+            }
+            return;
         }
 
         // Check if we need to prompt for placeholders.
@@ -232,6 +268,44 @@ pub fn confirm_safety(app: &mut App) {
     app.mode = Mode::Normal;
     app.safety_pattern = None;
     perform_execution(app, true);
+}
+
+/// Handles interaction with the recovery alert modal.
+#[allow(clippy::collapsible_if)]
+pub fn confirm_recovery(app: &mut App) {
+    if app.mode != Mode::RecoveryAlert {
+        return;
+    }
+
+    // Try to run the fix if available
+    if let Some(rec) = &app.recovery_suggestion {
+        if let Some(cmd) = &rec.fix_command {
+            if let Some(i) = app.list_state.selected() {
+                // Close modal and run fix
+                app.mode = Mode::Normal;
+                let cmd_clone: String = cmd.clone(); // Clone before mutation
+
+                // Clear suggestion
+                app.recovery_suggestion = None;
+
+                // Update step status
+                if let Some(step) = app.steps.get_mut(i) {
+                    step.status = StepStatus::Running;
+                    step.output
+                        .push_str(&format!("\n\n> 💡 Auto-Fix: {}\n", cmd_clone));
+                }
+
+                // Execute the fix
+                app.execution_manager
+                    .execute_background(i, cmd_clone, None, false);
+                return;
+            }
+        }
+    }
+
+    // If no fix or just info, just close
+    app.mode = Mode::Normal;
+    app.recovery_suggestion = None;
 }
 
 /// Exports the current session to JSON and Markdown files.

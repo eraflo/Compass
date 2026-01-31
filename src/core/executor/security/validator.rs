@@ -33,13 +33,16 @@ impl DependencyValidator {
     ///
     /// Returns `Ok(())` if the dependency is met, or an error message if missing.
     pub fn validate(cmd_content: &str) -> Result<(), String> {
-        let trimmed = cmd_content.trim();
-        if trimmed.is_empty() {
-            return Ok(());
-        }
+        // Find the first meaningful line (not empty, not a comment)
+        let first_command = cmd_content
+            .lines()
+            .map(|line| line.trim())
+            .find(|line| !line.is_empty() && !line.starts_with('#'));
 
-        // Extract the first word (the potential binary)
-        let binary_name = trimmed.split_whitespace().next().unwrap_or("");
+        let binary_name = match first_command {
+            Some(line) => line.split_whitespace().next().unwrap_or(""),
+            None => return Ok(()), // Nothing to execute (empty or just comments)
+        };
 
         // Basic check: ignore shell builtins like cd, echo, etc. for simple validation
         // (Advanced validation might need more nuance, but this is a good start)

@@ -12,9 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::core::config::ConfigManager;
+use crate::core::analysis::recovery::RecoveryRecommendation;
 use crate::core::executor::ExecutionManager;
-use crate::core::models::Step;
+use crate::core::infrastructure::config::ConfigManager;
+use crate::core::models::{Condition, Step};
 use crate::ui::state::Mode;
 use crate::ui::state::modal::ModalState;
 
@@ -43,6 +44,8 @@ pub struct App {
     pub modal: ModalState,
     /// The dangerous pattern detected (for safety alert).
     pub safety_pattern: Option<String>,
+    /// The current recovery recommendation (if any).
+    pub recovery_suggestion: Option<RecoveryRecommendation>,
     /// Scroll offset for the details panel.
     pub details_scroll: u16,
     /// Total height of the details content (wrapped).
@@ -74,10 +77,27 @@ impl App {
     ///
     /// A new `App` instance ready for rendering.
     #[must_use]
-    pub fn new(steps: Vec<Step>, readme_path: PathBuf, is_remote: bool) -> Self {
+    pub fn new(mut steps: Vec<Step>, readme_path: PathBuf, is_remote: bool) -> Self {
         let mut list_state = ListState::default();
         if !steps.is_empty() {
             list_state.select(Some(0));
+        }
+
+        // Filter steps based on conditions
+        steps.retain(|step| {
+            if let Some(cond) = &step.condition {
+                match cond {
+                    Condition::Os(os) => std::env::consts::OS == os,
+                    Condition::EnvVarExists(v) => std::env::var(v).is_ok(),
+                    Condition::FileExists(p) => std::path::Path::new(p).exists(),
+                }
+            } else {
+                true
+            }
+        });
+
+        if steps.is_empty() {
+            list_state.select(None);
         }
 
         // Initialize configuration manager
@@ -91,6 +111,7 @@ impl App {
             mode: Mode::Normal,
             modal: ModalState::new(),
             safety_pattern: None,
+            recovery_suggestion: None,
             details_scroll: 0,
             content_height: 0,
             viewport_height: 0,

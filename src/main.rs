@@ -86,7 +86,7 @@ fn main() -> anyhow::Result<()> {
         Commands::Tui { file } => {
             if cli.sandbox {
                 // Use the core docker module to check availability
-                if let Err(e) = core::docker::ensure_docker_available() {
+                if let Err(e) = core::infrastructure::docker::ensure_docker_available() {
                     eprintln!("Error: {}", e);
                     std::process::exit(1);
                 }

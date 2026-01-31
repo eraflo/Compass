@@ -82,5 +82,14 @@ pub fn handle_input(app: &mut App, key: KeyEvent) {
             // Any key dismisses the notification
             app.cancel_modal();
         }
+        Mode::RecoveryAlert => match key.code {
+            KeyCode::Enter => {
+                handlers::confirm_recovery(app);
+            }
+            KeyCode::Esc => {
+                app.cancel_modal();
+            }
+            _ => {}
+        },
     }
 }

@@ -41,4 +41,6 @@ pub enum Mode {
     HelpModal,
     /// Displaying export success/failure message.
     ExportNotification,
+    /// Displaying a suggested fix for a failed command.
+    RecoveryAlert,
 }
