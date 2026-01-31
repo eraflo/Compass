@@ -54,5 +54,5 @@ jobs:
       - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          #CARGO_REGISTRY_TOKEN: "unused"
+          CARGO_REGISTRY_TOKEN: "unused"
         run: npx semantic-release
