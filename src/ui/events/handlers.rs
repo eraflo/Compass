@@ -156,6 +156,12 @@ pub fn perform_execution(app: &mut App, bypass_safety: bool) {
             return;
         }
 
+        let language = app.steps[i]
+            .code_blocks
+            .first()
+            .and_then(|cb| cb.language.as_deref())
+            .map(ToString::to_string);
+
         // Safety Shield
         if !bypass_safety {
             #[allow(clippy::collapsible_if)]
@@ -169,7 +175,8 @@ pub fn perform_execution(app: &mut App, bypass_safety: bool) {
         // Execute background
         app.steps[i].status = StepStatus::Running;
         app.steps[i].output = String::new();
-        app.execution_manager.execute_background(i, content);
+        app.execution_manager
+            .execute_background(i, content, language);
     }
 }
 

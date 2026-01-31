@@ -35,11 +35,24 @@ impl Executor {
     }
 
     /// Orchestrates the execution of a code block.
-    pub fn execute_streamed(&mut self, cmd_content: &str, tx: &Sender<String>) -> StepStatus {
-        // 1. Dependency Validation
-        if let Err(e) = DependencyValidator::validate(cmd_content) {
-            let _ = tx.send(format!("{e}\n"));
-            return StepStatus::Failed;
+    pub fn execute_streamed(
+        &mut self,
+        cmd_content: &str,
+        language: Option<&str>,
+        tx: &Sender<String>,
+    ) -> StepStatus {
+        // 1. Dependency Validation (Only for shell commands)
+        // For other languages (Python, etc.), the content is source code, not a CLI command.
+        if language.is_none()
+            || matches!(
+                language,
+                Some("bash" | "sh" | "shell" | "zsh" | "fish" | "cmd" | "powershell")
+            )
+        {
+            if let Err(e) = DependencyValidator::validate(cmd_content) {
+                let _ = tx.send(format!("{e}\n"));
+                return StepStatus::Failed;
+            }
         }
 
         // 2. Safety Shield (Simple check for now, UI confirmation will be added later)
@@ -66,6 +79,6 @@ impl Executor {
 
         // 4. Run via ShellSession
         let session = ShellSession::new(self.context.clone());
-        session.run(&cleaned_content, tx)
+        session.run(&cleaned_content, language, tx)
     }
 }

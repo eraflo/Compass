@@ -12,11 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-pub mod checker;
-pub mod engine;
-pub mod languages;
-pub mod security;
+pub mod definition;
+pub mod strategies;
 
-pub use checker::check_dependencies;
-pub use engine::{CommandBuilder, ExecutionContext, ExecutionManager, Executor};
-pub use security::SafetyShield;
+use definition::LanguageDefinition;
+
+pub fn get_language_handler(lang_id: Option<&str>) -> Box<dyn LanguageDefinition> {
+    match lang_id {
+        Some("python" | "py") => Box::new(strategies::python::PythonHandler),
+        // Add more languages here
+        _ => Box::new(strategies::shell::ShellHandler),
+    }
+}

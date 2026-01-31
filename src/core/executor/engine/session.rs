@@ -13,6 +13,7 @@
 // limitations under the License.
 
 use super::context::ExecutionContext;
+use crate::core::executor::languages::get_language_handler;
 use crate::core::models::StepStatus;
 use portable_pty::{CommandBuilder, PtySize, native_pty_system};
 use std::io::Read;
@@ -31,7 +32,12 @@ impl ShellSession {
     }
 
     /// Executing via PTY and streaming output to a sender.
-    pub fn run(&self, cmd_content: &str, tx: &Sender<String>) -> StepStatus {
+    pub fn run(
+        &self,
+        cmd_content: &str,
+        language: Option<&str>,
+        tx: &Sender<String>,
+    ) -> StepStatus {
         let pty_system = native_pty_system();
         let pty_pair = match pty_system.openpty(PtySize {
             rows: 24,
@@ -46,18 +52,23 @@ impl ShellSession {
             }
         };
 
-        // Command selection based on OS
-        let mut cmd = if cfg!(target_os = "windows") {
-            let mut c = CommandBuilder::new("powershell");
-            c.arg("-c");
-            c.arg(cmd_content);
-            c
-        } else {
-            let mut c = CommandBuilder::new("sh");
-            c.arg("-c");
-            c.arg(cmd_content);
-            c
+        // Prepare using Strategy
+        let handler = get_language_handler(language);
+        let temp_dir = std::env::temp_dir();
+
+        let prepared_path = match handler.prepare(cmd_content, &temp_dir) {
+            Ok(path) => path,
+            Err(e) => {
+                let _ = tx.send(format!("Failed to prepare code: {e}\n"));
+                return StepStatus::Failed;
+            }
         };
+
+        let run_cmd = handler.get_run_command(&prepared_path);
+        let mut cmd = CommandBuilder::new(&run_cmd[0]);
+        for arg in &run_cmd[1..] {
+            cmd.arg(arg);
+        }
 
         cmd.cwd(&self.context.current_dir);
         for (key, val) in &self.context.env_vars {
@@ -69,6 +80,8 @@ impl ShellSession {
             Ok(child) => child,
             Err(e) => {
                 let _ = tx.send(format!("Error spawning process: {e}\n"));
+                // Try to cleanup
+                let _ = std::fs::remove_file(&prepared_path);
                 return StepStatus::Failed;
             }
         };
@@ -101,6 +114,9 @@ impl ShellSession {
 
         // Wait for child to finish
         let status = child.wait();
+
+        // Cleanup temporary file
+        let _ = std::fs::remove_file(&prepared_path);
 
         // On Windows, give ConPTY a tiny bit of time to flush
         if cfg!(target_os = "windows") {
