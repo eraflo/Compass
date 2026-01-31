@@ -1,3 +1,12 @@
+# [1.3.0](https://github.com/eraflo/Compass/compare/v1.2.0...v1.3.0) (2026-01-31)
+
+
+### Features
+
+* added support for multiple languages ([62fe5c2](https://github.com/eraflo/Compass/commit/62fe5c2911ee9a93c2ec25a38e6fb3176dc686d9))
+* multiple languages support ([c9f78af](https://github.com/eraflo/Compass/commit/c9f78afafcb7cddd14ddf39bdd7a672553de984f))
+* safety check for every language and confirm popup ([0c9e422](https://github.com/eraflo/Compass/commit/0c9e42286ad8b3b27857ba2d9db53eae8ba2eadd))
+
 # [1.2.0](https://github.com/eraflo/Compass/compare/v1.1.0...v1.2.0) (2026-01-31)
 
 
