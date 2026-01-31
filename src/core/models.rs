@@ -12,6 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+/// The status of a step's execution.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum StepStatus {
+    #[default]
+    Pending,
+    Running,
+    Success,
+    Failed,
+}
+
 /// A block of code extracted from a Markdown file.
 #[derive(Debug, Clone, Default)]
 pub struct CodeBlock {
@@ -30,4 +40,8 @@ pub struct Step {
     pub description: String,
     /// A list of code blocks found within this section.
     pub code_blocks: Vec<CodeBlock>,
+    /// The current execution status of this step.
+    pub status: StepStatus,
+    /// The captured output (stdout and stderr) from the last execution.
+    pub output: String,
 }

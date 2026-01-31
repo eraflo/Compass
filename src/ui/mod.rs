@@ -59,9 +59,17 @@ fn run_loop(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>, mut app: App)
                 KeyCode::Char('q') => return Ok(()),
                 KeyCode::Down | KeyCode::Char('j') => app.next(),
                 KeyCode::Up | KeyCode::Char('k') => app.previous(),
+                KeyCode::Enter => {
+                    // Update main panel to show output if we have a way to
+                    // communicate from thread to app.
+                    app.execute_selected();
+                }
                 _ => {}
             }
         }
+
+        // Poll for results from background threads
+        app.update();
 
         if app.should_quit {
             return Ok(());

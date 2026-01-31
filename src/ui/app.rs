@@ -12,13 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::core::models::Step;
+use crate::core::executor::ExecutionContext;
+use crate::core::models::{Step, StepStatus};
 use ratatui::{
     Frame,
     layout::{Constraint, Direction, Layout},
     style::{Color, Modifier, Style},
     widgets::{Block, Borders, List, ListItem, ListState, Paragraph},
 };
+use std::sync::mpsc::{self, Receiver, Sender};
+use std::thread;
+
+/// A message sent from the execution thread to the main app.
+pub enum ExecutionMessage {
+    Finished(usize, StepStatus, String),
+}
 
 /// The main application state for the TUI.
 pub struct App {
@@ -28,6 +36,12 @@ pub struct App {
     pub list_state: ListState,
     /// Whether the application should exit.
     pub should_quit: bool,
+    /// The execution context for running commands.
+    pub executor: ExecutionContext,
+    /// Channel sender for threads.
+    pub tx: Sender<ExecutionMessage>,
+    /// Channel receiver for the main loop.
+    pub rx: Receiver<ExecutionMessage>,
 }
 
 impl App {
@@ -36,10 +50,14 @@ impl App {
         if !steps.is_empty() {
             list_state.select(Some(0));
         }
+        let (tx, rx) = mpsc::channel();
         Self {
             steps,
             list_state,
             should_quit: false,
+            executor: ExecutionContext::new(),
+            tx,
+            rx,
         }
     }
 
@@ -84,7 +102,21 @@ impl App {
         let items: Vec<ListItem> = self
             .steps
             .iter()
-            .map(|step| ListItem::new(step.title.clone()).style(Style::default().fg(Color::White)))
+            .map(|step| {
+                let symbol = match step.status {
+                    StepStatus::Pending => "  ",
+                    StepStatus::Running => "⏳ ",
+                    StepStatus::Success => "✅ ",
+                    StepStatus::Failed => "❌ ",
+                };
+                let style = match step.status {
+                    StepStatus::Running => Style::default().fg(Color::Yellow),
+                    StepStatus::Success => Style::default().fg(Color::Green),
+                    StepStatus::Failed => Style::default().fg(Color::Red),
+                    _ => Style::default().fg(Color::White),
+                };
+                ListItem::new(format!("{}{}", symbol, step.title)).style(style)
+            })
             .collect();
 
         // Render the list
@@ -110,6 +142,11 @@ impl App {
                     block.content
                 ));
             }
+
+            if !step.output.is_empty() {
+                content.push_str("--- Output ---\n");
+                content.push_str(&step.output);
+            }
             content
         } else {
             "No step selected.".to_string()
@@ -118,8 +155,58 @@ impl App {
         // Render the details
         let details = Paragraph::new(detail_text)
             .block(Block::default().title(" Details ").borders(Borders::ALL))
-            .wrap(ratatui::widgets::Wrap { trim: true });
+            .wrap(ratatui::widgets::Wrap { trim: false });
 
         frame.render_widget(details, chunks[1]);
+    }
+
+    /// Executes the currently selected step (Non-blocking).
+    pub fn execute_selected(&mut self) {
+        if let Some(i) = self.list_state.selected() {
+            if let Some(step) = self.steps.get(i) {
+                if step.status == StepStatus::Running {
+                    return; // Already running
+                }
+
+                let content = step
+                    .code_blocks
+                    .iter()
+                    .map(|b| b.content.as_str())
+                    .collect::<Vec<_>>()
+                    .join("\n");
+
+                if content.is_empty() {
+                    return;
+                }
+
+                let tx = self.tx.clone();
+                let current_dir = self.executor.current_dir.clone();
+                let index = i;
+
+                // Mark as running immediately for UI feedback
+                self.steps[i].status = StepStatus::Running;
+                self.steps[i].output.clear();
+
+                thread::spawn(move || {
+                    let mut local_executor = ExecutionContext { current_dir };
+                    let (status, output) = local_executor.execute(&content);
+                    let _ = tx.send(ExecutionMessage::Finished(index, status, output));
+                });
+            }
+        }
+    }
+
+    /// Polls for messages from the execution thread.
+    pub fn update(&mut self) {
+        while let Ok(message) = self.rx.try_recv() {
+            match message {
+                ExecutionMessage::Finished(i, status, output) => {
+                    if let Some(step) = self.steps.get_mut(i) {
+                        step.status = status;
+                        step.output = output;
+                    }
+                }
+            }
+        }
     }
 }
