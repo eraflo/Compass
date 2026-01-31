@@ -43,8 +43,9 @@ pub fn ensure_docker_available() -> Result<()> {
 
             #[cfg(target_os = "windows")]
             {
-                let docker_path =
-                    std::path::PathBuf::from("C:\\Program Files\\Docker\\Docker\\Docker Desktop.exe");
+                let docker_path = std::path::PathBuf::from(
+                    "C:\\Program Files\\Docker\\Docker\\Docker Desktop.exe",
+                );
                 if docker_path.exists() {
                     Command::new(docker_path)
                         .spawn()
