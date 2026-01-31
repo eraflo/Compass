@@ -1,3 +1,15 @@
+# [1.5.0](https://github.com/eraflo/Compass/compare/v1.4.0...v1.5.0) (2026-01-31)
+
+
+### Bug Fixes
+
+* fmt ([eeb3355](https://github.com/eraflo/Compass/commit/eeb33559e2db19602be2d90a6ce98bfad48845fa))
+
+
+### Features
+
+* conditional part for platform ([fbdff4a](https://github.com/eraflo/Compass/commit/fbdff4a292074e1bbe41f278a41b45095354cfcb))
+
 # [1.4.0](https://github.com/eraflo/Compass/compare/v1.3.0...v1.4.0) (2026-01-31)
 
 
