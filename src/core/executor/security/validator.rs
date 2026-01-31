@@ -18,6 +18,17 @@ use which::which;
 pub struct DependencyValidator;
 
 impl DependencyValidator {
+    /// Validates that a specific binary is available in the PATH.
+    pub fn validate_binary(binary_name: &str) -> Result<(), String> {
+        if which(binary_name).is_err() {
+            return Err(format!(
+                "Missing dependency: '{}' is not installed or not in PATH.",
+                binary_name
+            ));
+        }
+        Ok(())
+    }
+
     /// Validates a command string by checking if its primary binary is available.
     ///
     /// Returns `Ok(())` if the dependency is met, or an error message if missing.

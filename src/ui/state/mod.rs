@@ -35,6 +35,8 @@ pub enum Mode {
     InputModal,
     /// Waiting for confirmation of a dangerous command.
     SafetyAlert,
+    /// Waiting for confirmation of a missing dependency.
+    DependencyAlert,
     /// Displaying the help panel with all keyboard shortcuts.
     HelpModal,
     /// Displaying export success/failure message.

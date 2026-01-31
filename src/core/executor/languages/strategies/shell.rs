@@ -62,6 +62,19 @@ impl LanguageDefinition for ShellHandler {
         }
     }
 
+    fn get_dangerous_patterns(&self) -> &[&'static str] {
+        &[
+            "rm -rf /",
+            "rm -rf *",
+            "mkfs",
+            "> /dev/sd",
+            "dd if=",
+            ":(){:|:&};:", // Fork bomb
+            "mv /",
+            "chmod -R 777 /",
+        ]
+    }
+
     fn get_extension(&self) -> &str {
         if cfg!(target_os = "windows") {
             "ps1"

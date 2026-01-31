@@ -43,6 +43,21 @@ impl LanguageDefinition for PythonHandler {
         vec![cmd, prepared_path.to_string_lossy().to_string()]
     }
 
+    fn get_dangerous_patterns(&self) -> &[&'static str] {
+        &[
+            "os.system",
+            "subprocess.call",
+            "subprocess.run",
+            "subprocess.Popen",
+            "shutil.rmtree",
+            "exec(",
+            "eval(",
+            "__import__",
+            "open(", // Risky but maybe too common? Let's include specific dangerous reads/writes if possible, but "open" is safer to flag in a high security environment. For now keeping it simple.
+            "write(",
+        ]
+    }
+
     fn get_extension(&self) -> &str {
         "py"
     }

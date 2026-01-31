@@ -18,5 +18,4 @@ pub mod languages;
 pub mod security;
 
 pub use checker::check_dependencies;
-pub use engine::{CommandBuilder, ExecutionContext, ExecutionManager, Executor};
-pub use security::SafetyShield;
+pub use engine::{ExecutionContext, ExecutionManager, Executor};

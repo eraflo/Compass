@@ -14,5 +14,3 @@
 
 pub mod safety;
 pub mod validator;
-
-pub use safety::SafetyShield;

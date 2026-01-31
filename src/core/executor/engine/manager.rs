@@ -39,7 +39,13 @@ impl ExecutionManager {
     }
 
     /// Spawns a background thread to execute the given content.
-    pub fn execute_background(&self, index: usize, content: String, language: Option<String>) {
+    pub fn execute_background(
+        &self,
+        index: usize,
+        content: String,
+        language: Option<String>,
+        bypass_safety: bool,
+    ) {
         let tx = self.tx.clone();
         let current_dir = self.executor.context.current_dir.clone();
         let env_vars = self.executor.context.env_vars.clone();
@@ -65,7 +71,12 @@ impl ExecutionManager {
             });
 
             // Execute the command
-            let status = local_executor.execute_streamed(&content, language.as_deref(), &stream_tx);
+            let status = local_executor.execute_streamed(
+                &content,
+                language.as_deref(),
+                bypass_safety,
+                &stream_tx,
+            );
 
             // Send finish event
             tx.send(ExecutionMessage::Finished(

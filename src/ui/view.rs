@@ -118,6 +118,11 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
                 popups::safety::render(frame, frame.area(), pattern);
             }
         }
+        Mode::DependencyAlert => {
+            if let Some(ref message) = app.safety_pattern {
+                popups::dependency::render(frame, frame.area(), message);
+            }
+        }
         Mode::HelpModal => {
             popups::help::render(frame, frame.area(), app.help_scroll);
         }

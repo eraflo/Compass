@@ -42,6 +42,12 @@ pub trait LanguageDefinition {
     /// * `prepared_path` - The path returned by `prepare`.
     fn get_run_command(&self, prepared_path: &Path) -> Vec<String>;
 
+    /// Returns a list of dangerous patterns (strings) that should trigger a safety alert.
+    /// Examples: "rm -rf", "os.system", etc.
+    fn get_dangerous_patterns(&self) -> &[&'static str] {
+        &[]
+    }
+
     /// Returns the typical file extension for this language (e.g., "py", "rs").
     #[allow(dead_code)]
     fn get_extension(&self) -> &str;

@@ -60,7 +60,7 @@ pub fn handle_input(app: &mut App, key: KeyEvent) {
             }
             _ => {}
         },
-        Mode::SafetyAlert => match key.code {
+        Mode::SafetyAlert | Mode::DependencyAlert => match key.code {
             KeyCode::Enter => {
                 handlers::confirm_safety(app);
             }

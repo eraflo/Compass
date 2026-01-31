@@ -12,7 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::core::executor::{CommandBuilder, SafetyShield};
+use crate::core::executor::engine::CommandBuilder;
+use crate::core::executor::languages::get_language_handler;
+use crate::core::executor::security::safety::SafetyShield;
+use crate::core::executor::security::validator::DependencyValidator;
 use crate::core::export::Exporter;
 use crate::core::models::StepStatus;
 use crate::ui::app::{App, VERSION};
@@ -162,10 +165,38 @@ pub fn perform_execution(app: &mut App, bypass_safety: bool) {
             .and_then(|cb| cb.language.as_deref())
             .map(ToString::to_string);
 
-        // Safety Shield
+        // Safety Checks
         if !bypass_safety {
+            // 1. Dependency Check
+            let is_shell = language.is_none()
+                || matches!(
+                    language.as_deref(),
+                    Some("bash" | "sh" | "shell" | "zsh" | "fish" | "cmd" | "powershell")
+                );
+
+            if is_shell {
+                if let Err(e) = DependencyValidator::validate(&content) {
+                    app.safety_pattern = Some(e);
+                    app.mode = Mode::DependencyAlert;
+                    return;
+                }
+            } else {
+                // For other languages, check if the interpreter is installed
+                let handler = get_language_handler(language.as_deref());
+                let required_cmd = handler.get_required_command();
+                if let Err(e) = DependencyValidator::validate_binary(required_cmd) {
+                    app.safety_pattern = Some(e);
+                    app.mode = Mode::DependencyAlert;
+                    return;
+                }
+            }
+
+            // 2. Dangerous Patterns
+            let handler = get_language_handler(language.as_deref());
+            let patterns = handler.get_dangerous_patterns();
+
             #[allow(clippy::collapsible_if)]
-            if let Some(pattern) = SafetyShield::check(&content) {
+            if let Some(pattern) = SafetyShield::check(&content, patterns) {
                 app.safety_pattern = Some(pattern.to_string());
                 app.mode = Mode::SafetyAlert;
                 return;
@@ -176,7 +207,7 @@ pub fn perform_execution(app: &mut App, bypass_safety: bool) {
         app.steps[i].status = StepStatus::Running;
         app.steps[i].output = String::new();
         app.execution_manager
-            .execute_background(i, content, language);
+            .execute_background(i, content, language, bypass_safety);
     }
 }
 
@@ -184,7 +215,7 @@ pub fn perform_execution(app: &mut App, bypass_safety: bool) {
 ///
 /// Called when the user presses Enter on the safety alert modal.
 pub fn confirm_safety(app: &mut App) {
-    if app.mode != Mode::SafetyAlert {
+    if app.mode != Mode::SafetyAlert && app.mode != Mode::DependencyAlert {
         return;
     }
     app.mode = Mode::Normal;
