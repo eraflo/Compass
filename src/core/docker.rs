@@ -13,7 +13,6 @@
 // limitations under the License.
 
 use anyhow::{Context, Result, bail};
-use std::path::PathBuf;
 use std::process::Command;
 
 /// Checks if Docker is available and running.
@@ -45,7 +44,7 @@ pub fn ensure_docker_available() -> Result<()> {
             #[cfg(target_os = "windows")]
             {
                 let docker_path =
-                    PathBuf::from("C:\\Program Files\\Docker\\Docker\\Docker Desktop.exe");
+                    std::path::PathBuf::from("C:\\Program Files\\Docker\\Docker\\Docker Desktop.exe");
                 if docker_path.exists() {
                     Command::new(docker_path)
                         .spawn()
