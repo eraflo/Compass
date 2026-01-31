@@ -83,7 +83,7 @@ impl App {
         // Initialize configuration manager
         let config_manager = ConfigManager::new().ok();
 
-        let app = Self {
+        Self {
             steps,
             list_state,
             should_quit: false,
@@ -99,9 +99,14 @@ impl App {
             export_message: None,
             help_scroll: 0,
             is_remote,
-        };
+        }
+    }
 
-        app
+    /// Set sandbox mode
+    pub fn with_sandbox(mut self, enabled: bool, image: String) -> Self {
+        self.execution_manager.executor.context.sandbox_enabled = enabled;
+        self.execution_manager.executor.context.docker_image = image;
+        self
     }
 
     /// Loads configuration for the current README and pre-fills placeholders.
@@ -147,6 +152,11 @@ impl App {
         };
         self.list_state.select(Some(i));
         self.details_scroll = 0;
+    }
+
+    /// Does the app have sandbox enabled?
+    pub fn is_sandbox(&self) -> bool {
+        self.execution_manager.executor.context.sandbox_enabled
     }
 
     /// Selects the previous step in the list.

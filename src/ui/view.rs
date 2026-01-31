@@ -55,6 +55,16 @@ fn render_status_bar(frame: &mut Frame, area: Rect, app: &App) {
         spans.push(Span::styled("│", Style::default().fg(Color::DarkGray)));
     }
 
+    if app.is_sandbox() {
+        spans.push(Span::styled(
+            " 📦 SANDBOXED ",
+            Style::default()
+                .fg(Color::LightCyan)
+                .add_modifier(Modifier::BOLD),
+        ));
+        spans.push(Span::styled("│", Style::default().fg(Color::DarkGray)));
+    }
+
     spans.extend(vec![
         Span::styled(
             format!(" ✅ {completed}/{total} "),

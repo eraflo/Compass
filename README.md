@@ -39,13 +39,6 @@ compass README.md
 3. **Navigate:** Use your arrow keys to move through the guide.
 4. **Execute:** Press `Enter` to run a step. Compass maintains the environment and directory context between steps.
 
-## 🏗️ Project Structure (Roadmap)
-
-- [ ] **Phase 1:** Structural Markdown Parser (Current Focus)
-- [ ] **Phase 2:** TUI Navigation Engine (Ratatui)
-- [ ] **Phase 3:** Process Execution & PTY Integration
-- [ ] **Phase 4:** Dependency & Safety Shield
-
 ## 📄 License
 
 Distributed under the MIT License. See `LICENSE` for more information.

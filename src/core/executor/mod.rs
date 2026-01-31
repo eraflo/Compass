@@ -18,4 +18,4 @@ pub mod languages;
 pub mod security;
 
 pub use checker::check_dependencies;
-pub use engine::{ExecutionContext, ExecutionManager, Executor};
+pub use engine::{ExecutionManager, Executor};

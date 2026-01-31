@@ -47,16 +47,10 @@ impl ExecutionManager {
         bypass_safety: bool,
     ) {
         let tx = self.tx.clone();
-        let current_dir = self.executor.context.current_dir.clone();
-        let env_vars = self.executor.context.env_vars.clone();
+        let context = self.executor.context.clone();
 
         thread::spawn(move || {
-            let mut local_executor = Executor {
-                context: crate::core::executor::ExecutionContext {
-                    current_dir,
-                    env_vars,
-                },
-            };
+            let mut local_executor = Executor { context };
             let (stream_tx, stream_rx) = mpsc::channel::<String>();
 
             let tx_for_streaming = tx.clone();

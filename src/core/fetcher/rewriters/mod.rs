@@ -38,10 +38,10 @@ pub fn normalize_git_forge_url(url: &Url) -> Url {
         vec![Box::new(GitHubRewriter), Box::new(GitLabRewriter)];
 
     for rewriter in rewriters {
-        if rewriter.can_handle(url) {
-            if let Some(rewritten) = rewriter.rewrite(url) {
-                return rewritten;
-            }
+        if rewriter.can_handle(url)
+            && let Some(rewritten) = rewriter.rewrite(url)
+        {
+            return rewritten;
         }
     }
 

@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use crate::core::executor::languages::get_language_handler;
 use crate::core::models::Step;
 use std::collections::HashSet;
 use which::which;
@@ -41,6 +42,16 @@ pub fn check_dependencies(steps: &[Step]) -> CheckResult {
             });
 
             if !is_shell {
+                if let Some(lang) = &block.language {
+                    let handler = get_language_handler(Some(lang));
+                    let cmd = handler.get_required_command();
+                    // Filter out fallback shells (sh, powershell, cmd) returned by the default handler
+                    // when the language is not explicitly supported. We only want to report
+                    // missing dependencies for specific required tools (e.g. "go", "python", "cargo").
+                    if cmd != "sh" && cmd != "powershell" && cmd != "cmd" {
+                        candidates.insert(cmd.to_string());
+                    }
+                }
                 continue;
             }
 
