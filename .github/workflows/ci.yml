@@ -61,6 +61,5 @@ jobs:
       - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.ADMIN_TOKEN }}
-          # Keep "unused" to pass the plugin check without actually publishing
-          CARGO_REGISTRY_TOKEN: "unused"
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
         run: npx semantic-release
