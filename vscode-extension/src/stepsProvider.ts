@@ -15,15 +15,15 @@
  */
 
 import * as vscode from 'vscode';
-import { CompassClient, Step } from './client';
+import { CompassClient, Step, CodeBlock } from './client';
 
 /**
  * TreeDataProvider implementation for the Compass Steps view.
  * Displays the list of steps and their execution status.
  */
-export class StepsProvider implements vscode.TreeDataProvider<StepItem> {
-    private _onDidChangeTreeData: vscode.EventEmitter<StepItem | undefined | null | void> = new vscode.EventEmitter<StepItem | undefined | null | void>();
-    readonly onDidChangeTreeData: vscode.Event<StepItem | undefined | null | void> = this._onDidChangeTreeData.event;
+export class StepsProvider implements vscode.TreeDataProvider<StepItem | CodeItem> {
+    private _onDidChangeTreeData: vscode.EventEmitter<StepItem | CodeItem | undefined | null | void> = new vscode.EventEmitter<StepItem | CodeItem | undefined | null | void>();
+    readonly onDidChangeTreeData: vscode.Event<StepItem | CodeItem | undefined | null | void> = this._onDidChangeTreeData.event;
 
     private steps: Step[] = [];
     private client?: CompassClient;
@@ -39,13 +39,16 @@ export class StepsProvider implements vscode.TreeDataProvider<StepItem> {
         this._onDidChangeTreeData.fire();
     }
 
-    getTreeItem(element: StepItem): vscode.TreeItem {
+    getTreeItem(element: StepItem | CodeItem): vscode.TreeItem {
         return element;
     }
 
-    getChildren(element?: StepItem): Thenable<StepItem[]> {
+    getChildren(element?: StepItem): Thenable<StepItem[] | CodeItem[]> {
         if (element) {
-            return Promise.resolve([]);
+            // Return code blocks for this step
+            return Promise.resolve(
+                element.step.code_blocks.map((block, index) => new CodeItem(block, index))
+            );
         }
         return Promise.resolve(
             this.steps.map((step, index) => new StepItem(step, index))
@@ -61,10 +64,15 @@ export class StepItem extends vscode.TreeItem {
         public readonly step: Step,
         public readonly index: number
     ) {
-        super(`${index + 1}. ${step.title}`, vscode.TreeItemCollapsibleState.None);
+        // Collapsible only if it has code blocks
+        const state = step.code_blocks.length > 0
+            ? vscode.TreeItemCollapsibleState.Collapsed
+            : vscode.TreeItemCollapsibleState.None;
+
+        super(`${index + 1}. ${step.title}`, state);
         
         this.description = step.status;
-        this.tooltip = step.description;
+        this.tooltip = step.description || "No description";
         
         // Icon logic
         if (step.status === 'Success') {
@@ -77,11 +85,33 @@ export class StepItem extends vscode.TreeItem {
             this.iconPath = new vscode.ThemeIcon('circle-outline');
         }
 
-        // Click to run
-        this.command = {
-            command: 'compass.executeStep',
-            title: 'Run Step',
-            arguments: [this]
-        };
+        // Context value for commands
+        this.contextValue = 'step';
+        
+        // If it's a leaf (no code blocks), make it clickable to run
+        if (state === vscode.TreeItemCollapsibleState.None) {
+            this.command = {
+                command: 'compass.executeStep',
+                title: 'Run Step',
+                arguments: [this]
+            };
+        }
+    }
+}
+
+export class CodeItem extends vscode.TreeItem {
+    constructor(
+        public readonly block: CodeBlock,
+        public readonly index: number
+    ) {
+        // Show first line or truncation
+        const summary = block.content.split('\n')[0].trim();
+        super(summary || "(empty line)", vscode.TreeItemCollapsibleState.None);
+
+        this.description = block.language || "text";
+        this.tooltip = new vscode.MarkdownString();
+        this.tooltip.appendCodeblock(block.content, block.language || 'text');
+        
+        this.iconPath = new vscode.ThemeIcon('code');
     }
 }

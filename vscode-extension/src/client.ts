@@ -25,7 +25,15 @@ export interface Step {
     title: string;
     status: string;
     description: string;
+    code_blocks: CodeBlock[];
 }
+
+export interface CodeBlock {
+    language?: string;
+    content: string;
+    placeholders: string[];
+}
+
 
 /**
  * Handles communication with the Compass CLI in headless mode via JSON-RPC.
@@ -48,7 +56,7 @@ export class CompassClient {
     start(): Promise<void> {
         return new Promise((resolve, reject) => {
             const config = vscode.workspace.getConfiguration('compass');
-            const binaryPath = config.get<string>('binaryPath') || 'compass';
+            const binaryPath = process.env.COMPASS_BINARY_PATH || config.get<string>('binaryPath') || 'compass';
 
             // We must call the 'tui' subcommand to trigger the logic, but adding the --headless flag
             // hijacks the execution to start the JSON-RPC server instead of the TUI.
@@ -81,6 +89,7 @@ export class CompassClient {
 
                     // Handle Notification
                     if (!json.id && json.method === 'log' && json.params?.output) {
+                        // Pass raw output (with ANSI colors) to the terminal
                         this._onLog.fire(json.params.output);
                         return;
                     }

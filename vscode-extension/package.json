@@ -33,11 +33,33 @@
     "commands": [
       {
         "command": "compass.start",
-        "title": "Compass: Start Runbook",
+        "title": "Start Runbook",
         "icon": "$(play)"
+      },
+      {
+        "command": "compass.executeStep",
+        "title": "Run Step",
+        "icon": "$(play)"
+      },
+      {
+        "command": "compass.search",
+        "title": "Compass: Search Registry",
+        "category": "Compass"
+      },
+      {
+        "command": "compass.check",
+        "title": "Compass: Check Integrity",
+        "category": "Compass"
       }
     ],
     "menus": {
+      "view/item/context": [
+        {
+          "command": "compass.executeStep",
+          "when": "view == compassSteps && viewItem == step",
+          "group": "inline"
+        }
+      ],
       "editor/title": [
         {
           "command": "compass.start",
@@ -62,7 +84,13 @@
           "name": "Runbook Steps"
         }
       ]
-    }
+    },
+    "viewsWelcome": [
+      {
+        "view": "compassSteps",
+        "contents": "No active runbook.\n[Start Runbook](command:compass.start)"
+      }
+    ]
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
