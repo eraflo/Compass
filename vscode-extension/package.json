@@ -5,6 +5,10 @@
   "version": "0.1.0",
   "publisher": "eraflo",
   "icon": "media/compass.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/eraflo/Compass.git"
+  },
   "engines": {
     "vscode": "^1.80.0"
   },
