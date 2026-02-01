@@ -86,11 +86,16 @@ pub async fn start_guest_client(
                 }
             }
             Ok(tokio_tungstenite::tungstenite::Message::Close(_)) => {
-                let _ = app_tx.send(CompassEvent::ConnectionLost("Host closed connection.".to_string()));
+                let _ = app_tx.send(CompassEvent::ConnectionLost(
+                    "Host closed connection.".to_string(),
+                ));
                 break;
             }
             Err(e) => {
-                let _ = app_tx.send(CompassEvent::ConnectionLost(format!("Connection error: {}", e)));
+                let _ = app_tx.send(CompassEvent::ConnectionLost(format!(
+                    "Connection error: {}",
+                    e
+                )));
                 break;
             }
             _ => {}

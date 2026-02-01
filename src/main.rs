@@ -50,9 +50,9 @@ enum Commands {
     /// Check if system dependencies are met
     Check { file: String },
     /// Join a shared session (Guest mode)
-    Join { 
+    Join {
         /// The secure connection URL (wss://.../?pin=...)
-        url: String 
+        url: String,
     },
 }
 
@@ -125,14 +125,15 @@ fn main() -> anyhow::Result<()> {
                 // Generate Certs & PIN *before* spawning server/TUI
                 println!("Generating Secure Certificate (TLS 1.3)...");
                 let (certs, key, pin) = core::collab::security::generate_self_signed()?;
-                
-                let ip = local_ip_address::local_ip().unwrap_or(std::net::IpAddr::V4(std::net::Ipv4Addr::LOCALHOST));
+
+                let ip = local_ip_address::local_ip()
+                    .unwrap_or(std::net::IpAddr::V4(std::net::Ipv4Addr::LOCALHOST));
                 let secure_link = format!("wss://{}:3030/?pin={}", ip, pin);
-                
+
                 println!("\n🔐 Public Secure Session Ready!");
                 println!("👉  JOIN LINK:  {}", secure_link);
                 println!("    (Share this link securely. It acts as both key and certificate.)\n");
-                
+
                 println!("Press ENTER to launch the Host Interface...");
                 let mut input = String::new();
                 std::io::stdin().read_line(&mut input)?;
@@ -141,7 +142,9 @@ fn main() -> anyhow::Result<()> {
 
                 // Spawn the Host Server
                 rt.spawn(async move {
-                    if let Err(e) = core::collab::server::start_host_server(rx, certs, key, pin).await {
+                    if let Err(e) =
+                        core::collab::server::start_host_server(rx, certs, key, pin).await
+                    {
                         eprintln!("Host server error: {}", e);
                     }
                 });
@@ -205,7 +208,9 @@ fn main() -> anyhow::Result<()> {
             let tx_clone = tx.clone();
             let url_for_client = url.clone();
             rt.spawn(async move {
-                if let Err(e) = core::collab::client::start_guest_client(url_for_client, tx_clone).await {
+                if let Err(e) =
+                    core::collab::client::start_guest_client(url_for_client, tx_clone).await
+                {
                     eprintln!("Guest client error: {}", e);
                     std::process::exit(1);
                 }
