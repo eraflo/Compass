@@ -1,3 +1,11 @@
+## [2.0.7](https://github.com/eraflo/Compass/compare/v2.0.6...v2.0.7) (2026-02-01)
+
+
+### Bug Fixes
+
+* add publish button for github page ([9bb3871](https://github.com/eraflo/Compass/commit/9bb3871d6e8d3cd40555783f2a011a2265f01ed1))
+* dont trigger workflow on publish ([9a93ef0](https://github.com/eraflo/Compass/commit/9a93ef06ec261eb07f2e5937966596a98613b1cb))
+
 ## [2.0.6](https://github.com/eraflo/Compass/compare/v2.0.5...v2.0.6) (2026-02-01)
 
 
