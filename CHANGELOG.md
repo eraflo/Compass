@@ -1,3 +1,10 @@
+## [2.0.4](https://github.com/eraflo/Compass/compare/v2.0.3...v2.0.4) (2026-02-01)
+
+
+### Bug Fixes
+
+* bump vscode extension ([84ef1e5](https://github.com/eraflo/Compass/commit/84ef1e57776723bde40ca74f022bba4f18d338a9))
+
 ## [2.0.3](https://github.com/eraflo/Compass/compare/v2.0.2...v2.0.3) (2026-02-01)
 
 
