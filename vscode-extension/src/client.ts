@@ -50,7 +50,9 @@ export class CompassClient {
             const config = vscode.workspace.getConfiguration('compass');
             const binaryPath = config.get<string>('binaryPath') || 'compass';
 
-            this.process = cp.spawn(binaryPath, ['--headless', this.filePath], {
+            // We must call the 'tui' subcommand to trigger the logic, but adding the --headless flag
+            // hijacks the execution to start the JSON-RPC server instead of the TUI.
+            this.process = cp.spawn(binaryPath, ['tui', this.filePath, '--headless'], {
                 stdio: ['pipe', 'pipe', 'pipe']
             });
 
