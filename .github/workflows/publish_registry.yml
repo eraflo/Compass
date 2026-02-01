@@ -4,6 +4,9 @@ on:
   push:
     paths:
       - 'registry.json'
+      - 'index.html'
+      - 'style.css'
+      - 'script.js'
     branches:
       - main
 
