@@ -1,3 +1,10 @@
+## [2.0.5](https://github.com/eraflo/Compass/compare/v2.0.4...v2.0.5) (2026-02-01)
+
+
+### Bug Fixes
+
+* vscode extension publish ([0320f2e](https://github.com/eraflo/Compass/commit/0320f2ee10bb3c6f9732e7495ccb7ba7b5492441))
+
 ## [2.0.4](https://github.com/eraflo/Compass/compare/v2.0.3...v2.0.4) (2026-02-01)
 
 
