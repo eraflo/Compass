@@ -3,8 +3,22 @@ name: Rust CI & Release
 on:
   push:
     branches: [ main ]
+    paths-ignore:
+      - 'registry.json'
+      - 'index.html'
+      - 'style.css'
+      - 'script.js'
+      - '*.md'
+      - '.github/ISSUE_TEMPLATE/**'
   pull_request:
     branches: [ main ]
+    paths-ignore:
+      - 'registry.json'
+      - 'index.html'
+      - 'style.css'
+      - 'script.js'
+      - '*.md'
+      - '.github/ISSUE_TEMPLATE/**'
 
 permissions:
   contents: write
