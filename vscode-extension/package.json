@@ -2,9 +2,13 @@
   "name": "compass-vscode",
   "displayName": "Compass Navigator",
   "description": "Interactive Runbook Runner for VS Code",
-  "version": "0.1.0",
+  "version": "2.0.6",
   "publisher": "eraflo",
   "icon": "media/compass.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/eraflo/Compass.git"
+  },
   "engines": {
     "vscode": "^1.80.0"
   },
@@ -29,11 +33,33 @@
     "commands": [
       {
         "command": "compass.start",
-        "title": "Compass: Start Runbook",
+        "title": "Start Runbook",
         "icon": "$(play)"
+      },
+      {
+        "command": "compass.executeStep",
+        "title": "Run Step",
+        "icon": "$(play)"
+      },
+      {
+        "command": "compass.search",
+        "title": "Compass: Search Registry",
+        "category": "Compass"
+      },
+      {
+        "command": "compass.check",
+        "title": "Compass: Check Integrity",
+        "category": "Compass"
       }
     ],
     "menus": {
+      "view/item/context": [
+        {
+          "command": "compass.executeStep",
+          "when": "view == compassSteps && viewItem == step",
+          "group": "inline"
+        }
+      ],
       "editor/title": [
         {
           "command": "compass.start",
@@ -58,7 +84,13 @@
           "name": "Runbook Steps"
         }
       ]
-    }
+    },
+    "viewsWelcome": [
+      {
+        "view": "compassSteps",
+        "contents": "No active runbook.\n[Start Runbook](command:compass.start)"
+      }
+    ]
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
@@ -66,8 +98,8 @@
     "watch": "tsc -watch -p ./"
   },
   "devDependencies": {
-    "@types/vscode": "^1.80.0",
     "@types/node": "^16.x",
+    "@types/vscode": "^1.80.0",
     "typescript": "^5.0.0"
   }
 }

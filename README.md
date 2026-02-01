@@ -19,7 +19,7 @@ Documentation is often a graveyard of outdated commands and copy-paste errors. C
 - **Pre-flight Checks:** Automatically detects missing dependencies before you run a command.
 - **Automated Hooks:** Define pre-run, post-run, and failure handlers directly in your frontmatter.
 - **Ecosystem Ready:** Discover community runbooks, scan local repos, and integrate via headless mode.
-- **VS Code Extension:** Run your runbooks directly within your favorite editor using the integrated Compass Navigator.
+- **VS Code Extension:** Run your runbooks directly within your favorite editor using the integrated [**Compass Navigator**](https://marketplace.visualstudio.com/items?itemName=eraflo.compass-vscode).
 - **Secure Collaboration:** Real-time, encrypted multiplayer mode for pair programming on runbooks.
 - **Blazingly Fast:** Single binary, no runtime, built with 🦀 Rust.
 
@@ -52,7 +52,7 @@ Compass isn't just a runner; it's a platform.
   compass scan ./projects
   ```
 
-- **Compass Hub**: Search for community-maintained runbooks (e.g., Kubernetes setups, React starters).
+- **Compass Hub**: Search for community-maintained runbooks via the CLI or browse the [**Online Registry**](https://eraflo.github.io/Compass/).
   ```bash
   compass search "react"
   ```

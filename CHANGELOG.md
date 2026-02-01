@@ -1,3 +1,38 @@
+## [2.0.6](https://github.com/eraflo/Compass/compare/v2.0.5...v2.0.6) (2026-02-01)
+
+
+### Bug Fixes
+
+* enhance vscode integration ([c37371d](https://github.com/eraflo/Compass/commit/c37371d9f895c0c67e3fbe356f3f82f751a542e6))
+
+## [2.0.5](https://github.com/eraflo/Compass/compare/v2.0.4...v2.0.5) (2026-02-01)
+
+
+### Bug Fixes
+
+* vscode extension publish ([0320f2e](https://github.com/eraflo/Compass/commit/0320f2ee10bb3c6f9732e7495ccb7ba7b5492441))
+
+## [2.0.4](https://github.com/eraflo/Compass/compare/v2.0.3...v2.0.4) (2026-02-01)
+
+
+### Bug Fixes
+
+* bump vscode extension ([84ef1e5](https://github.com/eraflo/Compass/commit/84ef1e57776723bde40ca74f022bba4f18d338a9))
+
+## [2.0.3](https://github.com/eraflo/Compass/compare/v2.0.2...v2.0.3) (2026-02-01)
+
+
+### Bug Fixes
+
+* vscode ext wrong command ([64131bb](https://github.com/eraflo/Compass/commit/64131bb630c6af306f77acb90b23951cd8bd453a))
+
+## [2.0.2](https://github.com/eraflo/Compass/compare/v2.0.1...v2.0.2) (2026-02-01)
+
+
+### Bug Fixes
+
+* added small website and vscode release ([4b40bc6](https://github.com/eraflo/Compass/commit/4b40bc622541443c850d78dd0c2a34c15d479649))
+
 ## [2.0.1](https://github.com/eraflo/Compass/compare/v2.0.0...v2.0.1) (2026-02-01)
 
 
