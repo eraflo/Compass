@@ -2,7 +2,7 @@
   "name": "compass-vscode",
   "displayName": "Compass Navigator",
   "description": "Interactive Runbook Runner for VS Code",
-  "version": "2.0.5",
+  "version": "2.0.6",
   "publisher": "eraflo",
   "icon": "media/compass.png",
   "repository": {

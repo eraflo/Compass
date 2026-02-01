@@ -1,3 +1,10 @@
+## [2.0.6](https://github.com/eraflo/Compass/compare/v2.0.5...v2.0.6) (2026-02-01)
+
+
+### Bug Fixes
+
+* enhance vscode integration ([c37371d](https://github.com/eraflo/Compass/commit/c37371d9f895c0c67e3fbe356f3f82f751a542e6))
+
 ## [2.0.5](https://github.com/eraflo/Compass/compare/v2.0.4...v2.0.5) (2026-02-01)
 
 
