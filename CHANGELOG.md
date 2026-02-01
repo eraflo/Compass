@@ -1,3 +1,10 @@
+## [2.0.1](https://github.com/eraflo/Compass/compare/v2.0.0...v2.0.1) (2026-02-01)
+
+
+### Bug Fixes
+
+* missing metadata ([86171c0](https://github.com/eraflo/Compass/commit/86171c0dea6c622433c931d2d358248c048c8c2b))
+
 # [2.0.0](https://github.com/eraflo/Compass/compare/v1.6.0...v2.0.0) (2026-02-01)
 
 
