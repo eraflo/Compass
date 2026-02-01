@@ -1,0 +1,34 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "type": "npm",
+            "script": "watch",
+            "path": "vscode-extension",
+            "problemMatcher": "$tsc-watch",
+            "isBackground": true,
+            "label": "npm: watch",
+            "presentation": {
+                "group": "build",
+                "reveal": "never"
+            }
+        },
+        {
+            "label": "cargo build",
+            "type": "shell",
+            "command": "cargo",
+            "args": [
+                "build"
+            ],
+            "problemMatcher": [
+                "$rustc"
+            ],
+            "group": "build"
+        },
+        {
+            "label": "build all",
+            "dependsOn": ["cargo build", "npm: watch"],
+            "problemMatcher": []
+        }
+    ]
+}

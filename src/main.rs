@@ -80,20 +80,20 @@ enum Commands {
 
 async fn load_readme(file: &str) -> anyhow::Result<(String, PathBuf, bool)> {
     if file.starts_with("http://") || file.starts_with("https://") {
-        println!("Downloading remote README from {}...", file);
+        eprintln!("Downloading remote README from {}...", file);
         let content = core::fetcher::fetch_remote_content(file)?;
         Ok((content, PathBuf::from(file), true))
     } else {
         let path = PathBuf::from(file);
         if path.exists() {
             let canonical_path = fs::canonicalize(&path)?;
-            println!("Reading: {}...", canonical_path.display());
+            eprintln!("Reading: {}...", canonical_path.display());
             let content = fs::read_to_string(&canonical_path)
                 .with_context(|| format!("Failed to read file: {file}"))?;
             Ok((content, canonical_path, false))
         } else {
             // Try matching registry
-            println!(
+            eprintln!(
                 "File not found locally. Searching registry for '{}'...",
                 file
             );
@@ -201,7 +201,7 @@ async fn main() -> anyhow::Result<()> {
 
             // Headless Mode Check
             if cli.headless {
-                println!("Running in HEADLESS mode (JSON-RPC)...");
+                eprintln!("Running in HEADLESS mode (JSON-RPC)...");
                 core::ecosystem::rpc::start_headless_server(
                     steps,
                     path,
