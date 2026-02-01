@@ -23,6 +23,7 @@
 //! - `parser` - Markdown README parser
 
 pub mod analysis;
+pub mod collab;
 pub mod executor;
 pub mod export;
 pub mod fetcher;

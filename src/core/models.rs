@@ -12,8 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use serde::{Deserialize, Serialize};
+
 /// The status of a step's execution.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 pub enum StepStatus {
     #[default]
     Pending,
@@ -24,7 +26,7 @@ pub enum StepStatus {
 }
 
 /// A condition that must be met for a step to be applicable.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Condition {
     /// The step applies only to a specific OS (linux, macos, windows).
     Os(String),
@@ -35,7 +37,7 @@ pub enum Condition {
 }
 
 /// A block of code extracted from a Markdown file.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct CodeBlock {
     /// The language of the code block (e.g., "rust", "bash").
     pub language: Option<String>,
@@ -46,7 +48,7 @@ pub struct CodeBlock {
 }
 
 /// A parsing step representing a section of the README.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Step {
     /// The title of the step (extracted from a header).
     pub title: String,
