@@ -1,3 +1,10 @@
+## [2.0.1](https://github.com/eraflo/Compass/compare/v2.0.0...v2.0.1) (2026-02-01)
+
+
+### Bug Fixes
+
+* publish gh page ([fcefca6](https://github.com/eraflo/Compass/commit/fcefca61eccaa7fb7a45ea0e0b30e3df72b1f920))
+
 # [2.0.0](https://github.com/eraflo/Compass/compare/v1.6.0...v2.0.0) (2026-02-01)
 
 
