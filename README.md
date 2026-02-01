@@ -1,5 +1,9 @@
 # 🧭 Compass
 
+<p align="center">
+  <img src="doc/logo.png" alt="Compass Logo" width="150" height="auto" />
+</p>
+
 **Stop copy-pasting. Start navigating.**
 
 `compass` is a blazingly fast, terminal-based interactive runbook runner built in Rust. It transforms static `README.md` files into executable, step-by-step journeys, ensuring seamless developer onboarding and reliable infrastructure management.
@@ -13,12 +17,15 @@ Documentation is often a graveyard of outdated commands and copy-paste errors. C
 - **Zero-Config:** Works out of the box with any standard Markdown file.
 - **Interactive TUI:** A beautiful terminal interface powered by `ratatui`.
 - **Pre-flight Checks:** Automatically detects missing dependencies before you run a command.
-- **Safe by Design:** Edit commands on the fly and review impact before execution.
+- **Automated Hooks:** Define pre-run, post-run, and failure handlers directly in your frontmatter.
+- **Ecosystem Ready:** Discover community runbooks, scan local repos, and integrate via headless mode.
+- **VS Code Extension:** Run your runbooks directly within your favorite editor using the integrated Compass Navigator.
+- **Secure Collaboration:** Real-time, encrypted multiplayer mode for pair programming on runbooks.
 - **Blazingly Fast:** Single binary, no runtime, built with 🦀 Rust.
 
 ## 🚀 Getting Started
 
-### Installation (Coming Soon)
+### Installation
 
 ```bash
 cargo install compass
@@ -29,15 +36,43 @@ cargo install compass
 Simply point Compass to any Markdown file:
 
 ```bash
-compass README.md
+compass tui README.md
 ```
 
-## 🛠️ How it works
+## 🛠️ Key Features
 
-1. **Scan:** Compass parses the Markdown structure, identifying headers as steps and code blocks as executable actions.
-2. **Validate:** It checks your local system for required binaries (npm, docker, terraform, etc.).
-3. **Navigate:** Use your arrow keys to move through the guide.
-4. **Execute:** Press `Enter` to run a step. Compass maintains the environment and directory context between steps.
+### 1. Interactive TUI
+Compass parses the Markdown structure, identifying headers as steps and code blocks as executable actions. Navigate with arrow keys, edit on the fly, and execute.
+
+### 2. Ecosystem & Discovery
+Compass isn't just a runner; it's a platform.
+
+- **Deep Scan**: Find all runbooks in your project.
+  ```bash
+  compass scan ./projects
+  ```
+
+- **Compass Hub**: Search for community-maintained runbooks (e.g., Kubernetes setups, React starters).
+  ```bash
+  compass search "react"
+  ```
+
+### 3. Event Hooks (Automation)
+Add a YAML frontmatter to your markdown to trigger actions automatically.
+
+```yaml
+---
+pre_run: "echo 'Initializing environment...'"
+on_failure: "echo 'Step failed! Alerting team...'"
+---
+```
+
+### 4. Headless Mode (IDE Integration)
+Want to build a VS Code extension or an automated agent?
+```bash
+compass tui --headless README.md
+```
+This starts a JSON-RPC 2.0 server over Stdio, allowing programmatic control of the runner.
 
 ## 🤝 Real-time Collaboration (Secure)
 
@@ -48,8 +83,7 @@ Pass the `--share` flag to start a secure session:
 ```bash
 compass tui RELEASING.md --share
 ```
-Compass will generate a **Self-Signed Certificate** and a unique **PIN**.
-Share the provided secure link (e.g., `wss://192.168.1.15:3030/?pin=...`) with your team.
+Compass generates a secure link with a pinned certificate (TLS 1.3). Share this link with your peer.
 
 ### Join a Session
 Paste the secure link to join as a guest:

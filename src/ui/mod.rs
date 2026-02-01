@@ -33,6 +33,7 @@ use std::io;
 use std::path::PathBuf;
 
 /// Starts the TUI application.
+#[allow(clippy::too_many_arguments)]
 pub fn run_tui(
     steps: Vec<Step>,
     readme_path: PathBuf,
@@ -40,6 +41,8 @@ pub fn run_tui(
     sandbox: bool,
     image: String,
     collab_session: Option<crate::core::collab::session::CollabSession>,
+    hooks: Option<crate::core::ecosystem::hooks::HookConfig>,
+    hooks_trusted: bool,
 ) -> Result<()> {
     // Setup terminal
     enable_raw_mode()?;
@@ -49,7 +52,9 @@ pub fn run_tui(
     let mut terminal = Terminal::new(backend)?; // Create terminal
 
     // Create app and run main loop
-    let mut app = App::new(steps, readme_path, is_remote).with_sandbox(sandbox, image);
+    let mut app = App::new(steps, readme_path, is_remote)
+        .with_sandbox(sandbox, image)
+        .with_hooks(hooks, hooks_trusted);
 
     if let Some(session) = collab_session {
         app.collab = Some(session);
@@ -58,7 +63,17 @@ pub fn run_tui(
     // Load persisted configuration (placeholders)
     app.load_config();
 
-    let res = run_loop(&mut terminal, app);
+    let res = run_loop(&mut terminal, &mut app);
+
+    // Trigger Post-run hook
+    if app.hooks_trusted
+        && let Some(config) = &app.hooks
+    {
+        crate::core::ecosystem::hooks::trigger_hook(
+            &config.post_run,
+            &std::collections::HashMap::new(),
+        );
+    }
 
     // Restore terminal
     disable_raw_mode()?; // Disable raw mode
@@ -69,7 +84,7 @@ pub fn run_tui(
 }
 
 /// Runs the main loop of the TUI application.
-fn run_loop(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>, mut app: App) -> Result<()> {
+fn run_loop(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>, app: &mut App) -> Result<()> {
     // Send initial snapshot if host
     if let Some(session) = &app.collab
         && session.is_host
@@ -83,7 +98,7 @@ fn run_loop(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>, mut app: App)
     }
 
     loop {
-        terminal.draw(|f| view::draw(f, &mut app))?;
+        terminal.draw(|f| view::draw(f, app))?;
 
         // Handle incoming collab events
         let mut events_to_process = Vec::new();
@@ -134,12 +149,12 @@ fn run_loop(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>, mut app: App)
             #[allow(clippy::collapsible_if)]
             if let Ok(Event::Key(key)) = event::read() {
                 if key.kind == KeyEventKind::Press {
-                    events::input::handle_input(&mut app, key);
+                    events::input::handle_input(app, key);
                 }
             }
         }
 
-        events::handlers::update(&mut app);
+        events::handlers::update(app);
 
         if app.should_quit {
             return Ok(());

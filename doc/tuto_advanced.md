@@ -1,6 +1,8 @@
 # Compass Advanced Tutorial
 
-This guide covers advanced features like Sandboxing, Dependency Checking, and Remote Execution.
+<img src="logo.png" alt="Compass Logo" width="100" align="right" />
+
+This guide covers advanced features like Sandboxing, Dependency Checking, Headless Remote Execution.
 
 ## 1. Safety First: The Sandbox Mode
 
@@ -47,6 +49,51 @@ Output:
 ❌ Missing:
    - python
 ```
+
+## 3. Automation with Event Hooks
+
+Hooks allow you to trigger actions automatically based on the lifecycle of your runbook execution. This is powerful for setting up environments or reporting status.
+
+### The Frontmatter Configuration
+
+Add a YAML frontmatter block at the very top of your Markdown file:
+
+```markdown
+---
+pre_run: "echo 'Starting deployment sequence...' && mkdir -p logs"
+post_run: "echo 'Cleanup complete.' && rm -rf tmp/"
+on_failure: "echo 'CRITICAL FAILURE: Notify admin'"
+---
+
+# My Deployment Runbook
+```
+
+- **`pre_run`**: Executes BEFORE the runbook opens. Useful for checks or setup.
+- **`post_run`**: Executes AFTER you exit the runbook (if successful).
+- **`on_failure`**: Executes if a step fails or the runbook crashes.
+
+> **Security Note:** When running a file with hooks, Compass will ask for your confirmation before executing them unless you are in `--headless` mode or pass a trusted flag.
+
+## 4. The Compass Ecosystem
+
+Compass allows you to manage and discover runbooks across your entire system.
+
+### Scanning for Runbooks
+Lost track of your `README.md` files? Scan a directory to find all valid Compass runbooks.
+
+```bash
+compass scan ./my-projects
+```
+
+### The Hub
+Search the global community registry for standard runbooks.
+
+```bash
+compass search "docker"
+```
+
+If you find a runbook you like, you can clone or run it directly (future feature).
+
 
 This statically analyzes the code blocks for common commands (like `cargo`, `npm`, `python`) and checks your PATH.
 
@@ -101,12 +148,30 @@ compass join "wss://192.168.1.50:3030/?pin=a1b2c3d4..."
 - **Encryption**: The connection is fully encrypted (TLS 1.3).
 - **Authentication**: The server rejects any connection that does not know the PIN.
 
+## 4. Headless Mode & IDE Integration
+
+Compass can run as a **JSON-RPC server**, allowing other tools (like IDEs) to drive the execution.
+
+### Enabling Headless Mode
+```bash
+compass --headless path/to/README.md
+```
+In this mode, Compass reads JSON requests from `stdin` and streams logs/results to `stdout`.
+
+### VS Code Integration
+This is the backend that powers the **Compass Navigator** extension. It allows you to:
+1. Visualize the runbook tree in VS Code.
+2. Click "Play" on steps.
+3. See logs in the Output panel.
+4. Stop execution automatically if a step fails.
+
 ## Summary of Flags
 
 | Flag | Description |
 |------|-------------|
 | `-s`, `--sandbox` | Run in Docker container |
 | `--image <IMG>` | Docker image to use (default: ubuntu:latest) |
+| `--headless` | Run in JSON-RPC Headless mode for IDE integration |
 | `--share` | Start a secure Host session (prints unique join URL) |
 | `check` | Analyze dependencies without running UI |
 | `join <URL>` | Join a remote session as a guest |

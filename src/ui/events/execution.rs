@@ -70,8 +70,27 @@ pub fn update(app: &mut App) {
                     }
 
                     if status == StepStatus::Failed {
+                        // Trigger on_failure hook
+                        if app.hooks_trusted
+                            && let Some(config) = &app.hooks
+                        {
+                            crate::core::ecosystem::hooks::trigger_hook(
+                                &config.on_failure,
+                                &new_env,
+                            );
+                        }
                         recommendation =
                             crate::core::analysis::recovery::analyze_error(&step.output);
+                    } else if status == StepStatus::Success {
+                        // Trigger on_success hook
+                        if app.hooks_trusted
+                            && let Some(config) = &app.hooks
+                        {
+                            crate::core::ecosystem::hooks::trigger_hook(
+                                &config.on_success,
+                                &new_env,
+                            );
+                        }
                     }
 
                     let finish_status = match status {

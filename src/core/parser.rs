@@ -12,13 +12,42 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use crate::core::ecosystem::hooks::HookConfig;
 use crate::core::models::{CodeBlock, Condition, Step};
 use pulldown_cmark::{Event, Parser, Tag};
 use regex::Regex;
 
-/// Parses a Markdown string into a sequence of steps.
-pub fn parse_readme(content: &str) -> Vec<Step> {
-    let parser = Parser::new(content);
+/// Parses a Markdown string into a sequence of steps and optional hook configuration.
+pub fn parse_readme(content: &str) -> (Vec<Step>, Option<HookConfig>) {
+    let mut current_content = content;
+    let mut hook_config = None;
+
+    // Frontmatter parsing
+    if let Some(rest) = content.strip_prefix("---")
+        && let Some(end_idx) = rest.find("\n---")
+    {
+        let frontmatter_str = &rest[..end_idx];
+        match serde_yaml::from_str::<HookConfig>(frontmatter_str) {
+            Ok(config) => {
+                hook_config = Some(config);
+                // Skip the closing delimiter "\n---" (4 chars)
+                if rest.len() > end_idx + 4 {
+                    current_content = &rest[end_idx + 4..];
+                    // Consume one optional newline if present directly after ---
+                    if let Some(s) = current_content.strip_prefix('\n') {
+                        current_content = s;
+                    } else if let Some(s) = current_content.strip_prefix("\r\n") {
+                        current_content = s;
+                    }
+                } else {
+                    current_content = "";
+                }
+            }
+            Err(e) => eprintln!("Failed to parse frontmatter: {}", e),
+        }
+    }
+
+    let parser = Parser::new(current_content);
     let mut steps = Vec::new();
     let mut current_step: Option<Step> = None;
     let mut in_heading = false;
@@ -33,6 +62,7 @@ pub fn parse_readme(content: &str) -> Vec<Step> {
         match event {
             Event::Html(cow_str) => {
                 let text = cow_str.trim();
+
                 if let Some(caps) = re_if.captures(text) {
                     let key = caps.get(1).map_or("", |m| m.as_str());
                     let val = caps.get(2).map_or("", |m| m.as_str());
@@ -118,7 +148,7 @@ pub fn parse_readme(content: &str) -> Vec<Step> {
         steps.push(step);
     }
 
-    steps
+    (steps, hook_config)
 }
 
 /// Extracts placeholders like <VAR> or {{VAR}} from a string.
@@ -146,7 +176,7 @@ mod tests {
     fn test_parse_simple() {
         let content =
             "# Header 1\nDescription 1\n```rust\nfn main() {}\n```\n# Header 2\nDescription 2";
-        let steps = parse_readme(content);
+        let (steps, _) = parse_readme(content);
 
         assert_eq!(steps.len(), 2);
         assert_eq!(steps[0].title, "Header 1");
@@ -171,7 +201,7 @@ mod tests {
     #[test]
     fn test_parse_with_placeholders() {
         let content = "# Test\n```bash\necho <HELLO>\n```";
-        let steps = parse_readme(content);
+        let (steps, _) = parse_readme(content);
         assert_eq!(steps[0].code_blocks[0].placeholders[0], "HELLO");
     }
 }

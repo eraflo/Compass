@@ -1,0 +1,37 @@
+name: Publish Registry
+
+on:
+  push:
+    paths:
+      - 'registry.json'
+    branches:
+      - main
+
+jobs:
+  validate-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Validate JSON
+        run: |
+          if jq empty registry.json; then
+            echo "Valid JSON"
+          else
+            echo "Invalid JSON"
+            exit 1
+          fi
+
+      # Deploy to GitHub Pages only if validation passed
+      # This ensures "main" can contain work-in-progress, but the Registry URL serves only valid JSON.
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        if: github.ref == 'refs/heads/main'
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./
+          keep_files: true
+          user_name: 'github-actions[bot]'
+          user_email: 'github-actions[bot]@users.noreply.github.com'
+          commit_message: 'Deploy registry.json updates'
+

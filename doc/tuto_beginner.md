@@ -1,9 +1,11 @@
 # Compass Beginner Tutorial
 
+<img src="logo.png" alt="Compass Logo" width="100" align="right" />
+
 Welcome to Compass! This guide will help you get started with interactive README execution.
 
 ## Prerequisites
-- A working installation of Compass (`cargo install --path .`)
+- A working installation of Compass (`cargo install compass`).
 
 ## Basic Concepts
 Compass treats every Header in a Markdown file as a "Step". Code blocks under that header belong to that step.
@@ -13,13 +15,20 @@ Compass treats every Header in a Markdown file as a "Step". Code blocks under th
 We have provided a simple example file to demonstrate navigation and output.
 
 ### 1. Launching Compass
+
+**Option A: Terminal (TUI)**
 Run the following command in your terminal:
 
 ```bash
 compass tui examples/placeholder_test.md
 ```
 
-### 2. The Interface
+**Option B: VS Code Extension**
+1. Open `examples/placeholder_test.md` in VS Code.
+2. Open Command Palette (`Ctrl+Shift+P`) -> `Compass: Start Navigator`.
+3. Use the Sidebar to run steps.
+
+### 2. The Interface (TUI)
 You will see the **Table of Contents** on the left and the **Details** on the right.
 
 - **Navigate**: Use `Up/Down` arrows or `j/k` to move between steps.
