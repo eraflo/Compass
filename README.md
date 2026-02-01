@@ -28,7 +28,7 @@ Documentation is often a graveyard of outdated commands and copy-paste errors. C
 ### Installation
 
 ```bash
-cargo install compass
+cargo install compass-cli
 ```
 
 ### Usage
