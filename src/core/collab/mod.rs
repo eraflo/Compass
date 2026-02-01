@@ -12,13 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Event handlers (Re-export)
-//!
-//! This module re-exports handlers from split modules for backward compatibility
-//! and convenience.
-//!
-//! - `execution`: Core execution logic
-//! - `actions`: User interaction actions
-
-pub use super::actions::{confirm_recovery, confirm_safety, export_report, submit_input};
-pub use super::execution::{execute_selected, update};
+pub mod client;
+pub mod events;
+pub mod security;
+pub mod server;
+pub mod session;

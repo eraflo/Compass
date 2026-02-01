@@ -13,6 +13,7 @@
 // limitations under the License.
 
 use crate::core::analysis::recovery::RecoveryRecommendation;
+use crate::core::collab::session::CollabSession;
 use crate::core::executor::ExecutionManager;
 use crate::core::infrastructure::config::ConfigManager;
 use crate::core::models::{Condition, Step};
@@ -62,6 +63,8 @@ pub struct App {
     pub help_scroll: u16,
     /// Indicates if the README is loaded from a remote source.
     pub is_remote: bool,
+    /// Active collaboration session (if any).
+    pub collab: Option<CollabSession>,
 }
 
 impl App {
@@ -120,6 +123,7 @@ impl App {
             export_message: None,
             help_scroll: 0,
             is_remote,
+            collab: None,
         }
     }
 
@@ -173,6 +177,14 @@ impl App {
         };
         self.list_state.select(Some(i));
         self.details_scroll = 0;
+
+        // Emit collab event if host
+        if let Some(session) = &self.collab
+            && session.is_host
+            && let Some(tx) = &session.tx
+        {
+            let _ = tx.send(crate::core::collab::events::CompassEvent::StepChanged(i));
+        }
     }
 
     /// Does the app have sandbox enabled?
@@ -197,6 +209,14 @@ impl App {
         };
         self.list_state.select(Some(i));
         self.details_scroll = 0;
+
+        // Emit collab event if host
+        if let Some(session) = &self.collab
+            && session.is_host
+            && let Some(tx) = &session.tx
+        {
+            let _ = tx.send(crate::core::collab::events::CompassEvent::StepChanged(i));
+        }
     }
 
     /// Scrolls the details panel up.

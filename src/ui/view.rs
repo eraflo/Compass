@@ -55,6 +55,22 @@ fn render_status_bar(frame: &mut Frame, area: Rect, app: &App) {
         spans.push(Span::styled("│", Style::default().fg(Color::DarkGray)));
     }
 
+    if let Some(session) = &app.collab {
+        let label = if session.is_host { "HOST" } else { "GUEST" };
+        let id_str = session.id.as_deref().unwrap_or("?");
+        spans.push(Span::styled(
+            format!(" 📡 LIVE [{label}]: {id_str} "),
+            Style::default()
+                .fg(if session.is_host {
+                    Color::Red
+                } else {
+                    Color::Green
+                })
+                .add_modifier(Modifier::BOLD),
+        ));
+        spans.push(Span::styled("│", Style::default().fg(Color::DarkGray)));
+    }
+
     if app.is_sandbox() {
         spans.push(Span::styled(
             " 📦 SANDBOXED ",

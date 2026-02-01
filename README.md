@@ -39,6 +39,26 @@ compass README.md
 3. **Navigate:** Use your arrow keys to move through the guide.
 4. **Execute:** Press `Enter` to run a step. Compass maintains the environment and directory context between steps.
 
+## 🤝 Real-time Collaboration (Secure)
+
+Compass allows you to work together on a runbook in real-time.
+
+### Host a Session
+Pass the `--share` flag to start a secure session:
+```bash
+compass tui RELEASING.md --share
+```
+Compass will generate a **Self-Signed Certificate** and a unique **PIN**.
+Share the provided secure link (e.g., `wss://192.168.1.15:3030/?pin=...`) with your team.
+
+### Join a Session
+Paste the secure link to join as a guest:
+```bash
+compass join "wss://192.168.1.15:3030/?pin=a1b2c3d4..."
+```
+
+> **Security Note:** Connections are End-to-End Encrypted (TLS 1.3). We use **Certificate Pinning** to prevent Man-In-The-Middle attacks without needing a centralized Certificate Authority. Authentication is enforced via the PIN.
+
 ## 📄 License
 
 Distributed under the MIT License. See `LICENSE` for more information.

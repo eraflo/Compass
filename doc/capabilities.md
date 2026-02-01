@@ -31,6 +31,16 @@ Compass is an interactive Navigator for Markdown READMEs, designed to make compl
 - **Auto-start**: On Windows and macOS, attempts to launch Docker Desktop if it is not running.
 - **Image Selection**: Custom docker images can be specified via `--image`.
 
+### 6. Collaboration (Secure)
+- **Real-time Sessions**: Multiple users can work on the same runbook session.
+- **Role-Based Access Control**: 
+    - **Host (Driver)**: Controls navigation, executes commands, broadcasts state. Full Control.
+    - **Guest (Observer)**: View-only access. Follows navigation and execution output in real-time. Cannot execute commands.
+- **Security Architecture (Zero-Trust)**:
+    - **Encryption**: All traffic runs over TLS 1.3 (WSS).
+    - **Certificate Pinning**: The Host generates a self-signed cert on the fly. Detailed fingerprints replace CA validation.
+    - **Authentication**: A unique PIN token guards access. This PIN serves as both the certificate validator and the access key.
+
 ## Architecture
 
 - **Core**: Parsing, Model definitions, Execution logic.
