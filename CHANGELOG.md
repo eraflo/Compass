@@ -1,3 +1,10 @@
+## [2.0.3](https://github.com/eraflo/Compass/compare/v2.0.2...v2.0.3) (2026-02-01)
+
+
+### Bug Fixes
+
+* vscode ext wrong command ([64131bb](https://github.com/eraflo/Compass/commit/64131bb630c6af306f77acb90b23951cd8bd453a))
+
 ## [2.0.2](https://github.com/eraflo/Compass/compare/v2.0.1...v2.0.2) (2026-02-01)
 
 

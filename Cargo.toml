@@ -1,7 +1,7 @@
 [package]
 name = "compass-cli"
 default-run = "compass"
-version = "2.0.2"
+version = "2.0.3"
 edition = "2024"
 authors = ["eraflo"]
 description = "Interactive README runner and onboarding guide"
