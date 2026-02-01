@@ -1,0 +1,63 @@
+name: Publish Runbook
+description: Submit a new runbook to the Compass Registry
+title: "Publish Runbook: <Name>"
+labels: ["registry", "runbook-submission"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for contributing to the Compass Registry!
+        Please fill out the details below so we can add your runbook.
+
+  - type: input
+    id: name
+    attributes:
+      label: Runbook Name
+      description: The unique identifier for your runbook (e.g., `k8s-deploy`, `onboarding-rust`).
+      placeholder: my-awesome-runbook
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: A short summary of what this runbook does.
+      placeholder: Automates the deployment of a Rust service to Kubernetes using Helm.
+    validations:
+      required: true
+
+  - type: input
+    id: url
+    attributes:
+      label: Raw URL
+      description: The direct link to the raw Markdown file (e.g., GitHub Raw, Gist Raw).
+      placeholder: https://raw.githubusercontent.com/user/repo/main/runbook.md
+    validations:
+      required: true
+
+  - type: input
+    id: author
+    attributes:
+      label: Author (Optional)
+      description: Your name or GitHub username.
+      placeholder: octocat
+    validations:
+      required: false
+
+  - type: input
+    id: tags
+    attributes:
+      label: Tags
+      description: Comma-separated list of tags (e.g., `kubernetes, rust, devops`).
+      placeholder: rust, deploy, database
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Agreement
+      options:
+        - label: I confirm that this runbook contains safe commands and I have read the safety guidelines.
+          required: true
