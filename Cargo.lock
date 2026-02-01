@@ -305,7 +305,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "compass"
+name = "compass-cli"
 version = "2.0.0"
 dependencies = [
  "ansi-to-tui",

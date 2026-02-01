@@ -20,7 +20,7 @@
 This extension requires the **Compass CLI** to be installed and available in your system PATH.
 
 ```bash
-cargo install compass
+cargo install compass-cli
 ```
 *(Or build from source via `cargo install --path .`)*
 

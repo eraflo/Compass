@@ -5,7 +5,7 @@
 Welcome to Compass! This guide will help you get started with interactive README execution.
 
 ## Prerequisites
-- A working installation of Compass (`cargo install compass`).
+- A working installation of Compass (`cargo install compass-cli`).
 
 ## Basic Concepts
 Compass treats every Header in a Markdown file as a "Step". Code blocks under that header belong to that step.

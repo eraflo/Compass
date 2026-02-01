@@ -1,5 +1,6 @@
 [package]
-name = "compass"
+name = "compass-cli"
+default-run = "compass"
 version = "2.0.0"
 edition = "2024"
 authors = ["eraflo"]
@@ -8,6 +9,10 @@ license = "Apache-2.0"
 repository = "https://github.com/eraflo/Compass"
 readme = "README.md"
 # publish = true
+
+[[bin]]
+name = "compass"
+path = "src/main.rs"
 
 [dependencies]
 # Ultra-fast Markdown parser
