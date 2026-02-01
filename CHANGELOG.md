@@ -1,3 +1,10 @@
+## [2.0.2](https://github.com/eraflo/Compass/compare/v2.0.1...v2.0.2) (2026-02-01)
+
+
+### Bug Fixes
+
+* added small website and vscode release ([4b40bc6](https://github.com/eraflo/Compass/commit/4b40bc622541443c850d78dd0c2a34c15d479649))
+
 ## [2.0.1](https://github.com/eraflo/Compass/compare/v2.0.0...v2.0.1) (2026-02-01)
 
 
