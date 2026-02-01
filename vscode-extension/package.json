@@ -1,0 +1,73 @@
+{
+  "name": "compass-vscode",
+  "displayName": "Compass Navigator",
+  "description": "Interactive Runbook Runner for VS Code",
+  "version": "0.1.0",
+  "publisher": "eraflo",
+  "icon": "media/compass.png",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onLanguage:markdown"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "configuration": {
+      "title": "Compass",
+      "properties": {
+        "compass.binaryPath": {
+          "type": "string",
+          "default": "compass",
+          "description": "Path to the compass executable."
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "compass.start",
+        "title": "Compass: Start Runbook",
+        "icon": "$(play)"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "compass.start",
+          "when": "resourceLangId == markdown",
+          "group": "navigation"
+        }
+      ]
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "compass-explorer",
+          "title": "Compass",
+          "icon": "media/compass.png"
+        }
+      ]
+    },
+    "views": {
+      "compass-explorer": [
+        {
+          "id": "compassSteps",
+          "name": "Runbook Steps"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.80.0",
+    "@types/node": "^16.x",
+    "typescript": "^5.0.0"
+  }
+}
