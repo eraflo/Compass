@@ -7,6 +7,9 @@ on:
     branches:
       - main
 
+permissions:
+  contents: write
+
 jobs:
   validate-and-publish:
     runs-on: ubuntu-latest
