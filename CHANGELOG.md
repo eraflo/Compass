@@ -1,3 +1,15 @@
+# [1.6.0](https://github.com/eraflo/Compass/compare/v1.5.0...v1.6.0) (2026-02-01)
+
+
+### Bug Fixes
+
+* fmt and clippy ([7f77e0b](https://github.com/eraflo/Compass/commit/7f77e0b35f6fa56f16218d77eba1d112982237bc))
+
+
+### Features
+
+* secure distant collaboration ([6f81383](https://github.com/eraflo/Compass/commit/6f81383e99c0139ad04abb564c8963063155cf87))
+
 # [1.5.0](https://github.com/eraflo/Compass/compare/v1.4.0...v1.5.0) (2026-01-31)
 
 
