@@ -4,7 +4,7 @@ version = "1.0.0"
 edition = "2024"
 authors = ["eraflo"]
 description = "Interactive README runner and onboarding guide"
-publish = false
+# publish = true
 
 [dependencies]
 # Ultra-fast Markdown parser
@@ -34,7 +34,7 @@ minijinja = { version = "1.0", features = ["debug"] }
 ansi-to-tui = "7.0.0"
 uuid = { version = "1.20.0", features = ["v4"] }
 # Network requests
-reqwest = { version = "0.11", features = ["blocking", "rustls-tls"] }
+reqwest = { version = "0.11", features = ["blocking", "json", "rustls-tls"] }
 url = "2.5"
 sysinfo = "0.38.0"
 pathdiff = "0.2.3"
@@ -50,3 +50,4 @@ sha2 = "0.10"       # Hashing for fingerprinting
 hex = "0.4"
 base64 = "0.21"
 local-ip-address = "0.6.10"
+serde_yaml = "0.9.34"

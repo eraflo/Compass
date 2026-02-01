@@ -18,6 +18,10 @@ Compass is an interactive Navigator for Markdown READMEs, designed to make compl
 - **Confirmation Prompts**: Hazardous commands (like `rm -rf`) trigger a confirmation popup before execution.
 - **Sandbox Mode**: Isolate execution inside a Docker container using the `--sandbox` flag.
     - Mounts the current workspace read-only (or standard rw).
+
+### 4. Integrations
+- **Headless Mode**: Run Compass as a JSON-RPC server (`--headless`) to integrate with external tools (IDEs, CI pipelines).
+- **VS Code Extension**: A dedicated "Compass Navigator" extension allows developers to execute runbooks directly from the editor sidebar, with real-time log streaming.
     - Maps temporary script directories.
     - Rewrites paths to be container-compatible.
 - **Dependency Checks**: The `compass check` command scans a README for required tools (e.g., `cargo`, `npm`, `docker`) and verifies their presence in PATH.

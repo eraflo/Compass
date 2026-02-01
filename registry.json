@@ -1,0 +1,15 @@
+[
+  {
+    "name": "hooks-demo",
+    "description": "Demonstration of Compass lifecycle hooks (pre_run, post_run).",
+    "url": "https://raw.githubusercontent.com/eraflo/Compass/main/examples/hooks_demo.md",
+    "tags": ["demo", "hooks", "automation"]
+  },
+  {
+    "name": "beginner-tutorial",
+    "description": "Official Compass beginner tutorial.",
+    "url": "https://raw.githubusercontent.com/eraflo/Compass/main/doc/tuto_beginner.md",
+    "tags": ["tutorial", "official"]
+  }
+]
+

@@ -14,6 +14,7 @@
 
 use crate::core::analysis::recovery::RecoveryRecommendation;
 use crate::core::collab::session::CollabSession;
+use crate::core::ecosystem::hooks::HookConfig;
 use crate::core::executor::ExecutionManager;
 use crate::core::infrastructure::config::ConfigManager;
 use crate::core::models::{Condition, Step};
@@ -65,6 +66,10 @@ pub struct App {
     pub is_remote: bool,
     /// Active collaboration session (if any).
     pub collab: Option<CollabSession>,
+    /// Active hooks configuration.
+    pub hooks: Option<HookConfig>,
+    /// Whether the user has explicitly trusted the execution of hooks.
+    pub hooks_trusted: bool,
 }
 
 impl App {
@@ -124,7 +129,16 @@ impl App {
             help_scroll: 0,
             is_remote,
             collab: None,
+            hooks: None,
+            hooks_trusted: false,
         }
+    }
+
+    /// Sets the hooks configuration.
+    pub fn with_hooks(mut self, hooks: Option<HookConfig>, trusted: bool) -> Self {
+        self.hooks = hooks;
+        self.hooks_trusted = trusted;
+        self
     }
 
     /// Set sandbox mode
